@@ -8,7 +8,7 @@ paperlessApp.controller("PaperlessCtrl", ["$scope", "$location", "$resource", fu
     var Image = $resource("/images/:id", {id: '@id'}, {})
 
     var showError = function(error) {
-	$scope.error = error.data
+	$scope.error = error.data.error
     }
 
     $scope.list = function(searchparam) {

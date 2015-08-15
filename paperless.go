@@ -655,6 +655,21 @@ func updateImage(w http.ResponseWriter, r *http.Request) {
 	handleResponse(nil, http.StatusAccepted, w, r)
 }
 
+func httpErrorWrap(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func (w http.ResponseWriter, r *http.Request) {
+
+		defer func() {
+			if err := recover(); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Header().Set("Content-type","application/json")
+				fmt.Fprintf(w,`{"error" : "%s"}`, err)
+				log.Printf("%s %s %s Error: %s", r.RemoteAddr, r.Method, r.URL, err)
+			}
+		}()
+		handler.ServeHTTP(w, r)
+	})
+}
+
 func httpLogWrap(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func (w http.ResponseWriter, r *http.Request) {
 		log.Printf("%s %s %s", r.RemoteAddr, r.Method, r.URL)
@@ -694,7 +709,7 @@ func mainStartWeb(c *cli.Context) {
 	router.HandleFunc("/images", listImages).Methods("GET")
 	router.HandleFunc("/images/upload", receiveNewImage).Methods("POST")
 	router.HandleFunc("/images/{id:[0-9]+}", updateImage).Methods("POST")
-	http.Handle("/", httpLogWrap(router))
+	http.Handle("/", httpErrorWrap(httpLogWrap(router)))
 
 	fmt.Println("Starting web!! port:", c.Int("port"))
 
