@@ -207,6 +207,17 @@ func upload(fname string, url string, tags []string) {
 	data,err := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
 	check(err)
+
+	if resp.StatusCode != http.StatusCreated {
+		type jsonerror struct {
+			Error string
+		};
+		var jerr jsonerror
+		err = json.Unmarshal(data, &jerr)
+		check(err)
+		check(fmt.Errorf("Server error: %s", jerr.Error))
+	}
+
 	err = json.Unmarshal(data, &image)
 	check(err)
 
@@ -242,7 +253,14 @@ func mainAdd(c *cli.Context) {
 		if preferences.verbose {
 			log.Println("Uploading image",fname)
 		}
-		upload(fname, preferences.server, tags)
+		func() {
+			defer func() {
+				if err := recover(); err != nil {
+					log.Printf("Uploading image \"%s\" failed due to error: %s", fname, err)
+				}
+			}()
+			upload(fname, preferences.server, tags)
+		}()
 	}
 }
 
