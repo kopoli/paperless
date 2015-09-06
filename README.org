@@ -1,0 +1,46 @@
+* Paperless office interface
+
+  Reads the texts of images and makes them browsable and searchable via HTTP.
+
+  This includes a web server written in Golang that serves an interface in
+  AngularJS. The same binary can be used to upload images into the server.
+
+** requirements
+
+   On an ubuntu system run the following to install prerequisites for the OCR
+   and processing:
+
+   #+begin_src shell
+   sudo apt-get install sqlite3 tesseract-ocr-osd tesseract-ocr-fin tesseract-ocr imagemagick unpaper
+   #+end_src
+
+   Also Golang is required. Should work with v1.4.2 and v1.5.
+
+** Building the application
+
+   Clone this repository and run the following command:
+
+   #+begin_src shell
+   go build
+   #+end_src
+
+** Usage
+
+   Start the web server with the following:
+
+   #+begin_src shell
+   ./paperless start-web
+   #+end_src
+
+   Upload images:
+
+   #+begin_src shell
+   ./paperless add --tags tagname files [...]
+   #+end_src
+
+   At least one tag is required to upload files.
+
+
+** License
+
+   GPLv3+
