@@ -51,6 +51,10 @@ type Cmd struct {
 }
 
 func (c *Cmd) Validate(s Status) (err error) {
+	if s.LastErr != nil {
+		return s.LastErr
+	}
+
 	if len(c.Cmd) == 0 {
 		err = errors.New("Command string must be non-empty.")
 		return
