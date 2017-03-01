@@ -2,6 +2,8 @@ package paperless
 
 import (
 	"regexp"
+	"strings"
+	"unicode"
 )
 
 type Environment struct {
@@ -65,4 +67,26 @@ func parseConsts(s string) (ret []string) {
 	}
 
 	return
+}
+
+// splitWsQuote splits a string by whitespace, but takes doublequotes into
+// account
+func splitWsQuote(s string) []string {
+
+	quote := rune(0)
+
+	return strings.FieldsFunc(s, func(r rune) bool {
+		switch {
+		case r == quote:
+			quote = rune(0)
+			return true
+		case quote != rune(0):
+			return false
+		case unicode.In(r, unicode.Quotation_Mark):
+			quote = r
+			return true;
+		default:
+			return unicode.IsSpace(r)
+		}
+	})
 }
