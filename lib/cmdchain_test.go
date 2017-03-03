@@ -67,6 +67,17 @@ func TestNewCmdChainScript(t *testing.T) {
 			},
 		}, false},
 
+		{"Included a constant", args{"true $variable"}, &CmdChain{
+			Environment: Environment{
+				Constants: map[string]string {
+					"variable": "",
+				},
+			},
+			Links: []Link{
+				&Cmd{[]string{"true", "$variable"}},
+			},
+		}, false},
+
 		{"Command not found", args{"this-command-is-not-found"}, nil, true},
 	}
 	for _, tt := range tests {

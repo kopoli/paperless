@@ -50,6 +50,7 @@ type Cmd struct {
 	Cmd []string
 }
 
+// NewCmd creates a new Cmd from given command string
 func NewCmd(cmdstr string) (c *Cmd, err error) {
 	command := splitWsQuote(cmdstr)
 
@@ -73,6 +74,7 @@ func NewCmd(cmdstr string) (c *Cmd, err error) {
 	return
 }
 
+// Validate makes sure the command is proper and can be run
 func (c *Cmd) Validate(s Status) (err error) {
 	if s.LastErr != nil {
 		return s.LastErr
@@ -132,6 +134,18 @@ func NewCmdChainScript(script string) (c *CmdChain, err error) {
 
 		if len(line) == 0 {
 			continue
+		}
+
+		// Initialize the added constants
+		constants := parseConsts(line)
+		if len(constants) > 0 {
+			if c.Constants == nil {
+				c.Constants = make(map[string]string)
+			}
+
+			for _, co := range constants {
+				c.Constants[co] = ""
+			}
 		}
 
 		cmd, err := NewCmd(line)
