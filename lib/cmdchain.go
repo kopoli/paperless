@@ -15,10 +15,21 @@ import (
 //   - The constants are defined.
 //   - The programs are found.
 
+// Environment is the run environment for each command. It is supplied as part
+// of Status for a Link when it is Run or Validated.
 type Environment struct {
+
+	// Constants are variables that are defined before a command chain is run
 	Constants       map[string]string
+
+	// Tempfiles are constants that house a name of a temporary file. The
+	// files are created before the chain is run and they are removed at
+	// the end.
 	TempFiles       []string
 	RootDir         string
+
+	// AllowedCommands contain the commands that are allowed. If this is
+	// nil, all commands are allowed.
 	AllowedCommands map[string]bool
 }
 
