@@ -45,25 +45,25 @@ func TestNewCmdChainScript(t *testing.T) {
 # comment`}, &CmdChain{}, false},
 
 		{"Single command", args{"true"}, &CmdChain{
-			Links: []Link{&Cmd{[]string{"/bin/true"}}},
+			Links: []Link{&Cmd{[]string{"true"}}},
 		}, false},
 
 		{"Two commands", args{"true\nfalse"}, &CmdChain{
 			Links: []Link{
-				&Cmd{[]string{"/bin/true"}},
-				&Cmd{[]string{"/bin/false"}},
+				&Cmd{[]string{"true"}},
+				&Cmd{[]string{"false"}},
 			},
 		}, false},
 
 		{"Arguments", args{"true first second"}, &CmdChain{
 			Links: []Link{
-				&Cmd{[]string{"/bin/true", "first", "second"}},
+				&Cmd{[]string{"true", "first", "second"}},
 			},
 		}, false},
 
 		{"Quoted arguments", args{"true 'first second'"}, &CmdChain{
 			Links: []Link{
-				&Cmd{[]string{"/bin/true", "first second"}},
+				&Cmd{[]string{"true", "first second"}},
 			},
 		}, false},
 
@@ -125,6 +125,20 @@ func TestCmd_Validate(t *testing.T) {
 		{"Empty command", fields{[]string{""}}, args{Status{}}, true},
 		{"LastErr already set", fields{[]string{"true"}}, args{Status{LastErr: errors.New("abc")}}, true},
 		{"Command not found", fields{[]string{"command-is-not-found"}}, args{Status{}}, true},
+		{"Command is allowed", fields{[]string{"true"}},
+			args{Status{
+				Environment: Environment{
+					AllowedCommands: map[string]bool{
+						"true": true,
+					},
+				}}}, false},
+		{"Command not allowed", fields{[]string{"true"}},
+			args{Status{
+				Environment: Environment{
+					AllowedCommands: map[string]bool{
+						"b": true,
+					},
+				}}}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

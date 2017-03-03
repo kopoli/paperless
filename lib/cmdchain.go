@@ -19,7 +19,7 @@ type Environment struct {
 	Constants       map[string]string
 	TempFiles       []string
 	RootDir         string
-	AllowedCommands []string
+	AllowedCommands map[string]bool
 }
 
 type Status struct {
@@ -50,23 +50,49 @@ type Cmd struct {
 	Cmd []string
 }
 
+func NewCmd(cmdstr string) (c *Cmd, err error) {
+	command := splitWsQuote(cmdstr)
+
+	if len(command) == 0 {
+		return nil, util.E.New("A command could not be parsed from:", cmdstr)
+	}
+
+	c = &Cmd{command}
+
+	_, err = exec.LookPath(c.Cmd[0])
+	if err != nil {
+		return nil, util.E.Annotate(err, "Command", c.Cmd[0], "could not be found")
+
+	}
+
+	err = c.Validate(Status{})
+	if err != nil {
+		return nil, err
+	}
+
+	return
+}
+
 func (c *Cmd) Validate(s Status) (err error) {
 	if s.LastErr != nil {
 		return s.LastErr
 	}
 
 	if len(c.Cmd) == 0 {
-		err = errors.New("Command string must be non-empty.")
-		return
+		return errors.New("command string must be non-empty")
 	}
 
-	cmd, err := exec.LookPath(c.Cmd[0])
+	if s.AllowedCommands != nil {
+		if _, ok := s.AllowedCommands[c.Cmd[0]]; ok != true {
+			return errors.New("command is not allowed")
+		}
+	}
+
+	_, err = exec.LookPath(c.Cmd[0])
 	if err != nil {
-		err = util.E.Annotate(err, "Command", c.Cmd[0], "could not be found")
 		return
 	}
 
-	c.Cmd[0] = cmd
 	return
 }
 
@@ -104,15 +130,15 @@ func NewCmdChainScript(script string) (c *CmdChain, err error) {
 		line = commentRe.ReplaceAllString(line, "")
 		line = preWhitespaceRe.ReplaceAllString(line, "")
 
-		command := splitWsQuote(line)
-		if len(command) > 0 {
-			cmd := &Cmd{command}
-			err = cmd.Validate(Status{})
-			if err != nil {
-				return nil, err
-			}
-			c.Links = append(c.Links, cmd)
+		if len(line) == 0 {
+			continue
 		}
+
+		cmd, err := NewCmd(line)
+		if err != nil {
+			return nil, util.E.Annotate(err, "Improper command")
+		}
+		c.Links = append(c.Links, cmd)
 	}
 
 	return
