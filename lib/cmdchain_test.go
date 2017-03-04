@@ -79,6 +79,18 @@ func TestNewCmdChainScript(t *testing.T) {
 		}, false},
 
 		{"Command not found", args{"this-command-is-not-found"}, nil, true},
+
+		{"Included a temporary file", args{"true $tmpSomething"}, &CmdChain{
+			Environment: Environment{
+				Constants: map[string]string{
+					"tmpSomething": "",
+				},
+				TempFiles: []string{"tmpSomething"},
+			},
+			Links: []Link{
+				&Cmd{[]string{"true", "$tmpSomething"}},
+			},
+		}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

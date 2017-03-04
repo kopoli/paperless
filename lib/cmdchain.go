@@ -48,12 +48,35 @@ type CmdChain struct {
 	Links []Link
 }
 
-func (c *CmdChain) Validate(Status) error {
+func (c *CmdChain) Validate(s Status) (err error) {
+	for _, l := range c.Links {
+		err = l.Validate(s)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+func (c *CmdChain) Run(s Status) (err error) {
+	err = c.Validate(s)
+	if err != nil {
+		return
+	}
+
+	// TODO
+	// - make sure the constants are defined
+	// - Create the temporary files
+	// - Create the run directory
+
 	panic("not implemented")
 }
 
-func (c *CmdChain) Run(Status) error {
-	panic("not implemented")
+func RunCmdChain(c *CmdChain, constants map[string]string) (err error) {
+	s := Status{Environment: c.Environment}
+	s.Constants = constants
+
+	return c.Run(s)
 }
 
 type Cmd struct {
@@ -122,6 +145,7 @@ func (c *Cmd) Run(Status) error {
 
 var (
 	constRe         = regexp.MustCompile(`\$(\w+)`)
+	tmpfileConstRe  = regexp.MustCompile(`\$(tmp\w+)`)
 	commentRe       = regexp.MustCompile(`#.*$`)
 	preWhitespaceRe = regexp.MustCompile(`^\s+`)
 )
@@ -141,6 +165,15 @@ func parseConsts(s string) (ret []string) {
 	return
 }
 
+// NewCmdChainScript creates a CmdChain from a script where each command is on a separate line. The following syntax elements are supported:
+//
+// - Empty lines are filtered out.
+//
+// - Comments start with # and end with EOL.
+//
+// - Constants are strings that begin with $ and they can be set before running the cmdchain.
+//
+// - Temporary files are strings that start with $tmp and they are automatically created before running the cmdchain and removed afterwards.
 func NewCmdChainScript(script string) (c *CmdChain, err error) {
 	c = &CmdChain{}
 
@@ -152,7 +185,6 @@ func NewCmdChainScript(script string) (c *CmdChain, err error) {
 			continue
 		}
 
-		// Initialize the added constants
 		constants := parseConsts(line)
 		if len(constants) > 0 {
 			if c.Constants == nil {
@@ -161,20 +193,25 @@ func NewCmdChainScript(script string) (c *CmdChain, err error) {
 
 			for _, co := range constants {
 				c.Constants[co] = ""
+				if tmpfileConstRe.MatchString("$" + co) {
+					c.TempFiles = append(c.TempFiles, co)
+				}
 			}
+
 		}
 
-		cmd, err := NewCmd(line)
+		var cmd *Cmd
+		cmd, err = NewCmd(line)
 		if err != nil {
-			return nil, util.E.Annotate(err, "Improper command")
-		}
-
-		err = cmd.Validate(Status{Environment: c.Environment})
-		if err != nil {
-			return nil, err
+			return nil, util.E.Annotate(err, "improper command")
 		}
 
 		c.Links = append(c.Links, cmd)
+	}
+
+	err = c.Validate(Status{Environment: c.Environment})
+	if err != nil {
+		return nil, util.E.Annotate(err, "invalid command chain")
 	}
 
 	return
