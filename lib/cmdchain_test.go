@@ -144,13 +144,17 @@ func TestCmd_Validate(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"Proper command", fields{[]string{"true"}}, args{Status{}}, false},
+		{"Proper command", fields{[]string{"true"}}, args{Status{
+			Environment: Environment{
+				RootDir:"/",
+			}}}, false},
 		{"Empty command", fields{[]string{""}}, args{Status{}}, true},
 		{"LastErr already set", fields{[]string{"true"}}, args{Status{LastErr: errors.New("abc")}}, true},
 		{"Command not found", fields{[]string{"command-is-not-found"}}, args{Status{}}, true},
 		{"Command is allowed", fields{[]string{"true"}},
 			args{Status{
 				Environment: Environment{
+					RootDir:"/",
 					AllowedCommands: map[string]bool{
 						"true": true,
 					},
@@ -165,13 +169,17 @@ func TestCmd_Validate(t *testing.T) {
 		{"Constant is defined", fields{[]string{"true", "$something"}},
 			args{Status{
 				Environment: Environment{
+					RootDir:"/",
 					Constants: map[string]string{
 						"something": "value",
 					},
 				}}}, false},
 
 		{"Constant is not defined", fields{[]string{"true", "$else"}},
-			args{Status{}}, true},
+			args{Status{
+				Environment: Environment{
+					RootDir:"/",
+				}}}, true},
 
 		{"Commands cannot be read from a constant", fields{[]string{"$cmd"}},
 			args{Status{

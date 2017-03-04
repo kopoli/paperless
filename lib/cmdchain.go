@@ -1,6 +1,7 @@
 package paperless
 
 import (
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -25,7 +26,9 @@ type Environment struct {
 	// files are created before the chain is run and they are removed at
 	// the end.
 	TempFiles []string
-	RootDir   string
+
+	// The directory where the commands are run.
+	RootDir string
 
 	// AllowedCommands contain the commands that are allowed. If this is
 	// nil, all commands are allowed.
@@ -123,6 +126,14 @@ func (c *Cmd) Validate(s Status) (err error) {
 		return
 	}
 
+	if len(s.RootDir) == 0 {
+		return util.E.New("the RootDir must be defined")
+	}
+	info, err := os.Stat(s.RootDir)
+	if err != nil || info.Mode()&os.ModeDir == 0 {
+		return util.E.Annotate(err, "file ", s.RootDir, " is not a proper directory")
+	}
+
 	for _, a := range c.Cmd {
 		consts := parseConsts(a)
 		if len(consts) > 0 {
@@ -209,7 +220,10 @@ func NewCmdChainScript(script string) (c *CmdChain, err error) {
 		c.Links = append(c.Links, cmd)
 	}
 
-	err = c.Validate(Status{Environment: c.Environment})
+	s := Status{Environment: c.Environment}
+	s.RootDir = "/"
+
+	err = c.Validate(s)
 	if err != nil {
 		return nil, util.E.Annotate(err, "invalid command chain")
 	}
