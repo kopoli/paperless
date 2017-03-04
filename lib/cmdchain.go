@@ -1,7 +1,6 @@
 package paperless
 
 import (
-	"errors"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -20,13 +19,13 @@ import (
 type Environment struct {
 
 	// Constants are variables that are defined before a command chain is run
-	Constants       map[string]string
+	Constants map[string]string
 
 	// Tempfiles are constants that house a name of a temporary file. The
 	// files are created before the chain is run and they are removed at
 	// the end.
-	TempFiles       []string
-	RootDir         string
+	TempFiles []string
+	RootDir   string
 
 	// AllowedCommands contain the commands that are allowed. If this is
 	// nil, all commands are allowed.
@@ -77,11 +76,6 @@ func NewCmd(cmdstr string) (c *Cmd, err error) {
 
 	}
 
-	err = c.Validate(Status{})
-	if err != nil {
-		return nil, err
-	}
-
 	return
 }
 
@@ -92,18 +86,29 @@ func (c *Cmd) Validate(s Status) (err error) {
 	}
 
 	if len(c.Cmd) == 0 {
-		return errors.New("command string must be non-empty")
+		return util.E.New("command string must be non-empty")
 	}
 
 	if s.AllowedCommands != nil {
 		if _, ok := s.AllowedCommands[c.Cmd[0]]; ok != true {
-			return errors.New("command is not allowed")
+			return util.E.New("command is not allowed")
 		}
 	}
 
 	_, err = exec.LookPath(c.Cmd[0])
 	if err != nil {
 		return
+	}
+
+	for _, a := range c.Cmd {
+		consts := parseConsts(a)
+		if len(consts) > 0 {
+			for _, co := range consts {
+				if _, ok := s.Constants[co]; !ok {
+					return util.E.New("constant \"%s\" not defined", co)
+				}
+			}
+		}
 	}
 
 	return
@@ -163,6 +168,12 @@ func NewCmdChainScript(script string) (c *CmdChain, err error) {
 		if err != nil {
 			return nil, util.E.Annotate(err, "Improper command")
 		}
+
+		err = cmd.Validate(Status{Environment: c.Environment})
+		if err != nil {
+			return nil, err
+		}
+
 		c.Links = append(c.Links, cmd)
 	}
 

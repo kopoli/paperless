@@ -69,7 +69,7 @@ func TestNewCmdChainScript(t *testing.T) {
 
 		{"Included a constant", args{"true $variable"}, &CmdChain{
 			Environment: Environment{
-				Constants: map[string]string {
+				Constants: map[string]string{
 					"variable": "",
 				},
 			},
@@ -148,6 +148,24 @@ func TestCmd_Validate(t *testing.T) {
 				Environment: Environment{
 					AllowedCommands: map[string]bool{
 						"b": true,
+					},
+				}}}, true},
+		{"Constant is defined", fields{[]string{"true", "$something"}},
+			args{Status{
+				Environment: Environment{
+					Constants: map[string]string{
+						"something": "value",
+					},
+				}}}, false},
+
+		{"Constant is not defined", fields{[]string{"true", "$else"}},
+			args{Status{}}, true},
+
+		{"Commands cannot be read from a constant", fields{[]string{"$cmd"}},
+			args{Status{
+				Environment: Environment{
+					Constants: map[string]string{
+						"cmd": "true",
 					},
 				}}}, true},
 	}
