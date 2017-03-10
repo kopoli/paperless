@@ -386,6 +386,7 @@ func TestRunCmdChain(t *testing.T) {
 		}, true, true, "Running command: echo piip\npiip\n", false},
 		{"Existing temporary file", "echo $tmpmsg\ncat $tmpmsg", nil,
 			true, false, "", false},
+		{"Failing commands", "true\nfalse\ntrue", nil, true, false, "", true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
