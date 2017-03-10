@@ -42,7 +42,7 @@ type Status struct {
 }
 
 type Link interface {
-	Validate(Status) error
+	Validate(Environment) error
 	Run(Status) error
 }
 
@@ -51,9 +51,9 @@ type CmdChain struct {
 	Links []Link
 }
 
-func (c *CmdChain) Validate(s Status) (err error) {
+func (c *CmdChain) Validate(e Environment) (err error) {
 	for _, l := range c.Links {
-		err = l.Validate(s)
+		err = l.Validate(e)
 		if err != nil {
 			return
 		}
@@ -62,7 +62,7 @@ func (c *CmdChain) Validate(s Status) (err error) {
 }
 
 func (c *CmdChain) Run(s Status) (err error) {
-	err = c.Validate(s)
+	err = c.Validate(s.Environment)
 	if err != nil {
 		return
 	}
@@ -106,17 +106,13 @@ func NewCmd(cmdstr string) (c *Cmd, err error) {
 }
 
 // Validate makes sure the command is proper and can be run
-func (c *Cmd) Validate(s Status) (err error) {
-	if s.LastErr != nil {
-		return s.LastErr
-	}
-
+func (c *Cmd) Validate(e Environment) (err error) {
 	if len(c.Cmd) == 0 {
 		return util.E.New("command string must be non-empty")
 	}
 
-	if s.AllowedCommands != nil {
-		if _, ok := s.AllowedCommands[c.Cmd[0]]; ok != true {
+	if e.AllowedCommands != nil {
+		if _, ok := e.AllowedCommands[c.Cmd[0]]; ok != true {
 			return util.E.New("command is not allowed")
 		}
 	}
@@ -126,19 +122,19 @@ func (c *Cmd) Validate(s Status) (err error) {
 		return
 	}
 
-	if len(s.RootDir) == 0 {
+	if len(e.RootDir) == 0 {
 		return util.E.New("the RootDir must be defined")
 	}
-	info, err := os.Stat(s.RootDir)
+	info, err := os.Stat(e.RootDir)
 	if err != nil || info.Mode()&os.ModeDir == 0 {
-		return util.E.Annotate(err, "file ", s.RootDir, " is not a proper directory")
+		return util.E.Annotate(err, "file ", e.RootDir, " is not a proper directory")
 	}
 
 	for _, a := range c.Cmd {
 		consts := parseConsts(a)
 		if len(consts) > 0 {
 			for _, co := range consts {
-				if _, ok := s.Constants[co]; !ok {
+				if _, ok := e.Constants[co]; !ok {
 					return util.E.New("constant \"%s\" not defined", co)
 				}
 			}
@@ -220,10 +216,10 @@ func NewCmdChainScript(script string) (c *CmdChain, err error) {
 		c.Links = append(c.Links, cmd)
 	}
 
-	s := Status{Environment: c.Environment}
-	s.RootDir = "/"
+	e := c.Environment
+	e.RootDir = "/"
 
-	err = c.Validate(s)
+	err = c.Validate(e)
 	if err != nil {
 		return nil, util.E.Annotate(err, "invalid command chain")
 	}

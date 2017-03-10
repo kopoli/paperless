@@ -1,7 +1,6 @@
 package paperless
 
 import (
-	"errors"
 	"reflect"
 	"testing"
 )
@@ -136,7 +135,7 @@ func TestCmd_Validate(t *testing.T) {
 		Cmd []string
 	}
 	type args struct {
-		s Status
+		e Environment
 	}
 	tests := []struct {
 		name    string
@@ -144,57 +143,52 @@ func TestCmd_Validate(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"Proper command", fields{[]string{"true"}}, args{Status{
-			Environment: Environment{
-				RootDir:"/",
-			}}}, false},
-		{"Empty command", fields{[]string{""}}, args{Status{}}, true},
-		{"LastErr already set", fields{[]string{"true"}}, args{Status{LastErr: errors.New("abc")}}, true},
-		{"Command not found", fields{[]string{"command-is-not-found"}}, args{Status{}}, true},
+		{"Proper command", fields{[]string{"true"}},
+			args{Environment{
+				RootDir: "/",
+			}}, false},
+		{"Empty command", fields{[]string{""}}, args{}, true},
+		// {"LastErr already set", fields{[]string{"true"}}, args{Status{LastErr: errors.New("abc")}}, true},
+		{"Command not found", fields{[]string{"command-is-not-found"}}, args{}, true},
 		{"Command is allowed", fields{[]string{"true"}},
-			args{Status{
-				Environment: Environment{
-					RootDir:"/",
-					AllowedCommands: map[string]bool{
-						"true": true,
-					},
-				}}}, false},
+			args{Environment{
+				RootDir: "/",
+				AllowedCommands: map[string]bool{
+					"true": true,
+				},
+			}}, false},
 		{"Command not allowed", fields{[]string{"true"}},
-			args{Status{
-				Environment: Environment{
-					AllowedCommands: map[string]bool{
-						"b": true,
-					},
-				}}}, true},
+			args{Environment{
+				AllowedCommands: map[string]bool{
+					"b": true,
+				},
+			}}, true},
 		{"Constant is defined", fields{[]string{"true", "$something"}},
-			args{Status{
-				Environment: Environment{
-					RootDir:"/",
-					Constants: map[string]string{
-						"something": "value",
-					},
-				}}}, false},
+			args{Environment{
+				RootDir: "/",
+				Constants: map[string]string{
+					"something": "value",
+				},
+			}}, false},
 
 		{"Constant is not defined", fields{[]string{"true", "$else"}},
-			args{Status{
-				Environment: Environment{
-					RootDir:"/",
-				}}}, true},
+			args{Environment{
+					RootDir: "/",
+				}}, true},
 
 		{"Commands cannot be read from a constant", fields{[]string{"$cmd"}},
-			args{Status{
-				Environment: Environment{
+			args{Environment{
 					Constants: map[string]string{
 						"cmd": "true",
 					},
-				}}}, true},
+				}}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Cmd{
 				Cmd: tt.fields.Cmd,
 			}
-			if err := c.Validate(tt.args.s); (err != nil) != tt.wantErr {
+			if err := c.Validate(tt.args.e); (err != nil) != tt.wantErr {
 				t.Errorf("Cmd.Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
