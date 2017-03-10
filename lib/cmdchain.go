@@ -45,6 +45,10 @@ func (e *Environment) initEnv() (err error) {
 		return
 	}
 
+	if e.Constants == nil {
+		return util.E.New("field Constants not initialized")
+	}
+
 	e.RootDir, err = ioutil.TempDir("", "chain")
 	if err != nil {
 		return util.E.Annotate(err, "rootdir creation failed")
@@ -76,7 +80,7 @@ func (e *Environment) deinitEnv() (err error) {
 		return
 	}
 
-	if !strings.HasPrefix(e.RootDir, os.TempDir()) {
+	if !strings.HasPrefix(e.RootDir, os.TempDir()) || e.RootDir == os.TempDir() {
 		err = util.E.New("Temporary directory path is corrupted: %s", e.RootDir)
 		return
 	}
@@ -93,6 +97,18 @@ func (e *Environment) deinitEnv() (err error) {
 	}
 
 	e.initialized = false
+	return
+}
+
+func (e *Environment) validate() (err error) {
+	if len(e.RootDir) == 0 {
+		return util.E.New("the RootDir must be defined")
+	}
+	info, err := os.Stat(e.RootDir)
+	if err != nil || info.Mode()&os.ModeDir == 0 {
+		return util.E.Annotate(err, "file ", e.RootDir, " is not a proper directory")
+	}
+
 	return
 }
 
@@ -203,13 +219,7 @@ func (c *Cmd) Validate(e *Environment) (err error) {
 		return
 	}
 
-	if len(e.RootDir) == 0 {
-		return util.E.New("the RootDir must be defined")
-	}
-	info, err := os.Stat(e.RootDir)
-	if err != nil || info.Mode()&os.ModeDir == 0 {
-		return util.E.Annotate(err, "file ", e.RootDir, " is not a proper directory")
-	}
+	err = e.validate()
 
 	for _, a := range c.Cmd {
 		consts := parseConsts(a)

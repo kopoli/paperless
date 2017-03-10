@@ -1,6 +1,7 @@
 package paperless
 
 import (
+	"os"
 	"reflect"
 	"testing"
 )
@@ -173,15 +174,15 @@ func TestCmd_Validate(t *testing.T) {
 
 		{"Constant is not defined", fields{[]string{"true", "$else"}},
 			args{Environment{
-					RootDir: "/",
-				}}, true},
+				RootDir: "/",
+			}}, true},
 
 		{"Commands cannot be read from a constant", fields{[]string{"$cmd"}},
 			args{Environment{
-					Constants: map[string]string{
-						"cmd": "true",
-					},
-				}}, true},
+				Constants: map[string]string{
+					"cmd": "true",
+				},
+			}}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -191,6 +192,133 @@ func TestCmd_Validate(t *testing.T) {
 			if err := c.Validate(&tt.args.e); (err != nil) != tt.wantErr {
 				t.Errorf("Cmd.Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
+		})
+	}
+}
+
+func envIsProper(e *Environment) bool {
+	return e.initialized && e.validate() == nil
+}
+
+func envTempfilesExist(e *Environment) (ret bool) {
+	if e.validate() != nil {
+		return false
+	}
+
+	if len(e.TempFiles) == 0 {
+		return false
+	}
+
+	ret = true
+	for _, n := range e.TempFiles {
+		_, ok := e.Constants[n]
+		if !ok {
+			ret = false
+			continue
+		}
+		_, err := os.Stat(e.Constants[n])
+		if err != nil {
+			ret = false
+		}
+	}
+	return
+}
+
+func TestEnvironment_initEnv(t *testing.T) {
+	tests := []struct {
+		name     string
+		fields   Environment
+		wantErr  bool
+		validate func(*Environment) bool
+	}{
+		{"Empty Environment", Environment{}, true, nil},
+		{"Already initialized", Environment{
+			initialized: true,
+		}, false, nil},
+		{"Proper but empty", Environment{
+			Constants: map[string]string{},
+		}, false, envIsProper},
+		{"Proper with tempfiles", Environment{
+			Constants: map[string]string{
+				"a": "",
+			},
+			TempFiles: []string{
+				"a",
+			},
+		}, false, envTempfilesExist},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var err error
+			e := &tt.fields
+			if err = e.initEnv(); (err != nil) != tt.wantErr {
+				t.Errorf("Environment.initEnv() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if tt.validate != nil && !tt.validate(e) {
+				t.Errorf("Environment should be proper")
+			}
+
+			if err == nil {
+				e.deinitEnv()
+			}
+		})
+	}
+}
+
+func tempfilesShouldntExist(orig, deinit *Environment) (ret bool) {
+	if len(orig.TempFiles) == 0 {
+		return false
+	}
+	for _, n := range orig.TempFiles {
+		fname := orig.Constants[n]
+		_, err := os.Stat(fname)
+		if err == nil {
+			return false
+		}
+	}
+
+	return true
+}
+
+func TestEnvironment_deinitEnv(t *testing.T) {
+	tests := []struct {
+		name       string
+		fields     Environment
+		shouldInit bool
+		wantErr    bool
+		validate   func(orig, deinit *Environment)bool
+	}{
+		{"Empty Environment", Environment{}, false, false, nil},
+		{"Proper deinit", Environment{
+			Constants: map[string]string{
+				"a": "",
+			},
+			TempFiles: []string{
+				"a",
+			},
+		}, true, false, tempfilesShouldntExist},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &tt.fields
+			if tt.shouldInit {
+				err := e.initEnv()
+				if err != nil {
+					t.Errorf("initEnv should succeed")
+					return
+				}
+			}
+			orig := *e
+
+			if err := e.deinitEnv(); (err != nil) != tt.wantErr {
+				t.Errorf("Environment.deinitEnv() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if tt.validate != nil && !tt.validate(&orig, e) {
+				t.Errorf("Environment should be deinitialized properly")
+			}
+
 		})
 	}
 }
