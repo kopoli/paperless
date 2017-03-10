@@ -1,6 +1,8 @@
 package paperless
 
 import (
+	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"regexp"
@@ -27,31 +29,95 @@ type Environment struct {
 	// the end.
 	TempFiles []string
 
-	// The directory where the commands are run.
+	// The directory where the commands are run. This is a created
+	// temporary directory
 	RootDir string
 
 	// AllowedCommands contain the commands that are allowed. If this is
 	// nil, all commands are allowed.
 	AllowedCommands map[string]bool
+
+	initialized bool
 }
 
+func (e *Environment) initEnv() (err error) {
+	if e.initialized {
+		return
+	}
+
+	e.RootDir, err = ioutil.TempDir("", "chain")
+	if err != nil {
+		return util.E.Annotate(err, "rootdir creation failed")
+	}
+
+	var fp *os.File
+	for _, name := range e.TempFiles {
+		fp, err = ioutil.TempFile(e.RootDir, "tmp")
+		if err != nil {
+			err = util.E.Annotate(err, "tempfile creation failed")
+			e.initialized = true
+			e2 := e.deinitEnv()
+			if e2 != nil {
+				err = util.E.Annotate(err, "temproot removal failed:", e2)
+				e.initialized = false
+			}
+			return
+		}
+		e.Constants[name] = fp.Name()
+		fp.Close()
+	}
+
+	e.initialized = true
+	return
+}
+
+func (e *Environment) deinitEnv() (err error) {
+	if !e.initialized {
+		return
+	}
+
+	if !strings.HasPrefix(e.RootDir, os.TempDir()) {
+		err = util.E.New("Temporary directory path is corrupted: %s", e.RootDir)
+		return
+	}
+
+	err = os.RemoveAll(e.RootDir)
+	if err != nil {
+		err = util.E.Annotate(err, "tempdir removal failed:")
+	}
+
+	// Clear the temporary file and directory names
+	e.RootDir = ""
+	for _, n := range e.TempFiles {
+		e.Constants[n] = ""
+	}
+
+	e.initialized = false
+	return
+}
+
+// Status is the runtime status of the command chain
 type Status struct {
-	LastErr error
+	// The log output will be written to this
+	Log io.Writer
 
 	Environment
 }
 
 type Link interface {
-	Validate(Environment) error
-	Run(Status) error
+	Validate(*Environment) error
+	Run(*Status) error
 }
 
 type CmdChain struct {
+
+	//TODO remove this (this should come from outside)
 	Environment
+
 	Links []Link
 }
 
-func (c *CmdChain) Validate(e Environment) (err error) {
+func (c *CmdChain) Validate(e *Environment) (err error) {
 	for _, l := range c.Links {
 		err = l.Validate(e)
 		if err != nil {
@@ -61,26 +127,41 @@ func (c *CmdChain) Validate(e Environment) (err error) {
 	return
 }
 
-func (c *CmdChain) Run(s Status) (err error) {
-	err = c.Validate(s.Environment)
+func (c *CmdChain) Run(s *Status) (err error) {
+	err = c.Validate(&s.Environment)
 	if err != nil {
 		return
 	}
 
-	// TODO
-	// - make sure the constants are defined
-	// - Create the temporary files
-	// - Create the run directory
+	err = s.Environment.initEnv()
+	if err != nil {
+		return
+	}
 
-	panic("not implemented")
+	for i := range c.Links {
+		err = c.Links[i].Run(s)
+		if err != nil {
+			return
+		}
+	}
+
+	return
 }
 
-func RunCmdChain(c *CmdChain, constants map[string]string) (err error) {
-	s := Status{Environment: c.Environment}
-	s.Constants = constants
+func RunCmdChain(c *CmdChain, e Environment) (err error) {
+	s := Status{Environment: e}
 
-	return c.Run(s)
+	err = c.Run(&s)
+
+	e2 := s.Environment.deinitEnv()
+	if e2 != nil {
+		err = util.E.Annotate(err, "cmdchain deinit failed: ", e2)
+	}
+
+	return
 }
+
+////////////////////////////////////////////////////////////
 
 type Cmd struct {
 	Cmd []string
@@ -106,7 +187,7 @@ func NewCmd(cmdstr string) (c *Cmd, err error) {
 }
 
 // Validate makes sure the command is proper and can be run
-func (c *Cmd) Validate(e Environment) (err error) {
+func (c *Cmd) Validate(e *Environment) (err error) {
 	if len(c.Cmd) == 0 {
 		return util.E.New("command string must be non-empty")
 	}
@@ -144,7 +225,7 @@ func (c *Cmd) Validate(e Environment) (err error) {
 	return
 }
 
-func (c *Cmd) Run(Status) error {
+func (c *Cmd) Run(*Status) error {
 	panic("not implemented")
 }
 
@@ -219,7 +300,7 @@ func NewCmdChainScript(script string) (c *CmdChain, err error) {
 	e := c.Environment
 	e.RootDir = "/"
 
-	err = c.Validate(e)
+	err = c.Validate(&e)
 	if err != nil {
 		return nil, util.E.Annotate(err, "invalid command chain")
 	}

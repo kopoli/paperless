@@ -188,7 +188,7 @@ func TestCmd_Validate(t *testing.T) {
 			c := &Cmd{
 				Cmd: tt.fields.Cmd,
 			}
-			if err := c.Validate(tt.args.e); (err != nil) != tt.wantErr {
+			if err := c.Validate(&tt.args.e); (err != nil) != tt.wantErr {
 				t.Errorf("Cmd.Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
