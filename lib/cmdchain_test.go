@@ -1,6 +1,7 @@
 package paperless
 
 import (
+	"bytes"
 	"os"
 	"reflect"
 	"testing"
@@ -75,13 +76,18 @@ func TestNewCmdChainScript(t *testing.T) {
 		wantC   *CmdChain
 		wantErr bool
 	}{
-		{"Empty", args{""}, &CmdChain{}, false},
+		{"Empty", args{""}, &CmdChain{
+			Environment: Environment{Constants: map[string]string{}},
+		}, false},
 
 		{"Comment and empty line", args{`
-# comment`}, &CmdChain{}, false},
+# comment`}, &CmdChain{
+			Environment: Environment{Constants: map[string]string{}},
+		}, false},
 
 		{"Single command", args{"true"}, &CmdChain{
-			Links: []Link{&Cmd{[]string{"true"}}},
+			Links:       []Link{&Cmd{[]string{"true"}}},
+			Environment: Environment{Constants: map[string]string{}},
 		}, false},
 
 		{"Two commands", args{"true\nfalse"}, &CmdChain{
@@ -89,18 +95,21 @@ func TestNewCmdChainScript(t *testing.T) {
 				&Cmd{[]string{"true"}},
 				&Cmd{[]string{"false"}},
 			},
+			Environment: Environment{Constants: map[string]string{}},
 		}, false},
 
 		{"Arguments", args{"true first second"}, &CmdChain{
 			Links: []Link{
 				&Cmd{[]string{"true", "first", "second"}},
 			},
+			Environment: Environment{Constants: map[string]string{}},
 		}, false},
 
 		{"Quoted arguments", args{"true 'first second'"}, &CmdChain{
 			Links: []Link{
 				&Cmd{[]string{"true", "first second"}},
 			},
+			Environment: Environment{Constants: map[string]string{}},
 		}, false},
 
 		{"Included a constant", args{"true $variable"}, &CmdChain{
@@ -323,7 +332,7 @@ func TestEnvironment_deinitEnv(t *testing.T) {
 		fields     Environment
 		shouldInit bool
 		wantErr    bool
-		validate   func(orig, deinit *Environment)bool
+		validate   func(orig, deinit *Environment) bool
 	}{
 		{"Empty Environment", Environment{}, false, false, nil},
 		{"Proper deinit", Environment{
@@ -355,6 +364,55 @@ func TestEnvironment_deinitEnv(t *testing.T) {
 				t.Errorf("Environment should be deinitialized properly")
 			}
 
+		})
+	}
+}
+
+func TestRunCmdChain(t *testing.T) {
+	tests := []struct {
+		name       string
+		script     string
+		consts     map[string]string
+		valid      bool
+		wantOutput bool
+		output     string
+		wantErr    bool
+	}{
+		{"Empty script", "", nil, true, true, "", false},
+		{"Echo command", "echo piip", nil, true, true,
+			"Running command: echo piip\npiip\n", false},
+		{"Echo with a constant", "echo $msg", map[string]string{
+			"msg": "piip",
+		}, true, true, "Running command: echo piip\npiip\n", false},
+		{"Existing temporary file", "echo $tmpmsg\ncat $tmpmsg", nil,
+			true, false, "", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			ch, err := NewCmdChainScript(tt.script)
+			if (err != nil) == tt.valid {
+				t.Errorf("NewCmdChainScript() error = %v, valid %v", err, tt.valid)
+			}
+
+			s := Status{Environment: ch.Environment}
+			if tt.wantOutput {
+				s.Log = &bytes.Buffer{}
+			}
+			if tt.consts != nil {
+				s.Constants = tt.consts
+			}
+
+			err = RunCmdChain(ch, &s)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("RunCmdChain() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if tt.wantOutput && s.Log.(*bytes.Buffer).String() != tt.output {
+				t.Errorf("RunCmdChain() = [%v], want [%v]",
+					s.Log.(*bytes.Buffer).String(),
+					tt.output)
+			}
 		})
 	}
 }

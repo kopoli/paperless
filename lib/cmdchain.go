@@ -1,6 +1,7 @@
 package paperless
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -11,11 +12,6 @@ import (
 
 	"github.com/kopoli/go-util"
 )
-
-// TODO:
-// - Validation:
-//   - The constants are defined.
-//   - The programs are found.
 
 // Environment is the run environment for each command. It is supplied as part
 // of Status for a Link when it is Run or Validated.
@@ -149,11 +145,6 @@ func (c *CmdChain) Run(s *Status) (err error) {
 		return
 	}
 
-	err = s.Environment.initEnv()
-	if err != nil {
-		return
-	}
-
 	for i := range c.Links {
 		err = c.Links[i].Run(s)
 		if err != nil {
@@ -164,11 +155,13 @@ func (c *CmdChain) Run(s *Status) (err error) {
 	return
 }
 
-func RunCmdChain(c *CmdChain, e Environment) (err error) {
-	s := Status{Environment: e}
+func RunCmdChain(c *CmdChain, s *Status) (err error) {
+	err = s.Environment.initEnv()
+	if err != nil {
+		return
+	}
 
-	err = c.Run(&s)
-
+	err = c.Run(s)
 	e2 := s.Environment.deinitEnv()
 	if e2 != nil {
 		err = util.E.Annotate(err, "cmdchain deinit failed: ", e2)
@@ -235,8 +228,27 @@ func (c *Cmd) Validate(e *Environment) (err error) {
 	return
 }
 
-func (c *Cmd) Run(*Status) error {
-	panic("not implemented")
+func (c *Cmd) Run(s *Status) (err error) {
+	err = c.Validate(&s.Environment)
+	if err != nil {
+		return
+	}
+
+	var args []string
+	for i := range c.Cmd {
+		args = append(args, expandConsts(c.Cmd[i], s.Constants))
+	}
+
+	if s.Log != nil {
+		fmt.Fprintln(s.Log, "Running command:", strings.Join(args, " "))
+	}
+
+	cmd := exec.Command(args[0], args[1:]...)
+	cmd.Dir = s.RootDir
+	cmd.Stdout = s.Log
+	cmd.Stderr = s.Log
+
+	return cmd.Run()
 }
 
 ////////////////////////////////////////////////////////////
@@ -290,6 +302,7 @@ func expandConsts(s string, constants map[string]string) string {
 // - Temporary files are strings that start with $tmp and they are automatically created before running the cmdchain and removed afterwards.
 func NewCmdChainScript(script string) (c *CmdChain, err error) {
 	c = &CmdChain{}
+	c.Constants = make(map[string]string)
 
 	for _, line := range strings.Split(script, "\n") {
 		line = commentRe.ReplaceAllString(line, "")
@@ -300,18 +313,11 @@ func NewCmdChainScript(script string) (c *CmdChain, err error) {
 		}
 
 		constants := parseConsts(line)
-		if len(constants) > 0 {
-			if c.Constants == nil {
-				c.Constants = make(map[string]string)
+		for _, co := range constants {
+			c.Constants[co] = ""
+			if tmpfileConstRe.MatchString("$" + co) {
+				c.TempFiles = append(c.TempFiles, co)
 			}
-
-			for _, co := range constants {
-				c.Constants[co] = ""
-				if tmpfileConstRe.MatchString("$" + co) {
-					c.TempFiles = append(c.TempFiles, co)
-				}
-			}
-
 		}
 
 		var cmd *Cmd
