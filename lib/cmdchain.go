@@ -263,6 +263,22 @@ func parseConsts(s string) (ret []string) {
 	return
 }
 
+func expandConsts(s string, constants map[string]string) string {
+	return constRe.ReplaceAllStringFunc(s, func(match string) string {
+		cs := parseConsts(match)
+		if len(cs) != 1 {
+			panic("Invalid Regexp parsing")
+		}
+
+		ret, ok := constants[cs[0]]
+		if !ok {
+			ret = ""
+		}
+
+		return ret
+	})
+}
+
 // NewCmdChainScript creates a CmdChain from a script where each command is on a separate line. The following syntax elements are supported:
 //
 // - Empty lines are filtered out.

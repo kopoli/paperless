@@ -29,6 +29,42 @@ func Test_parseConsts(t *testing.T) {
 	}
 }
 
+func Test_expandConsts(t *testing.T) {
+	type args struct {
+		s         string
+		constants map[string]string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{"Empty", args{"", map[string]string{}}, ""},
+		{"Single constant", args{"$abc", map[string]string{
+			"abc": "something",
+		}}, "something"},
+		{"Multiple constants", args{"$a$b", map[string]string{
+			"a": "some",
+			"b": "thing",
+		}}, "something"},
+		{"Other stuff", args{"$a other $b", map[string]string{
+			"a": "some",
+			"b": "thing",
+		}}, "some other thing"},
+		{"Undefined", args{"$a$undefined$b", map[string]string{
+			"a": "some",
+			"b": "thing",
+		}}, "something"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := expandConsts(tt.args.s, tt.args.constants); got != tt.want {
+				t.Errorf("expandConsts() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestNewCmdChainScript(t *testing.T) {
 	type args struct {
 		script string
