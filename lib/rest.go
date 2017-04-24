@@ -13,6 +13,10 @@ import (
 	"github.com/kopoli/go-util"
 )
 
+type backend struct {
+	options util.Options
+}
+
 func todoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("{ item: \"todo\" }"))
 }
@@ -27,7 +31,13 @@ func loadTagCtx(next http.Handler) http.Handler {
 	})
 }
 
+func (b *backend) versionHandler(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("{ \"version\": \"" + b.options.Get("version", "unversioned") + "\" }"))
+}
+
 func StartWeb(o util.Options) (err error) {
+
+	back := &backend{o}
 
 	r := chi.NewRouter()
 
@@ -39,6 +49,7 @@ func StartWeb(o util.Options) (err error) {
 
 	// REST API
 	r.Route("/api/v1", func(r chi.Router) {
+		r.Get("/version", back.versionHandler)
 		r.Route("/image", func(r chi.Router) {
 			r.Get("/", todoHandler)
 			r.Post("/", todoHandler)
