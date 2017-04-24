@@ -1,20 +1,21 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
-	"bytes"
-	"log"
-	"regexp"
 	"time"
 
+	util "github.com/kopoli/go-util"
 	"github.com/kopoliitti/paperless/lib"
 
 	"encoding/json"
@@ -25,9 +26,10 @@ import (
 
 	"github.com/codegangsta/cli"
 
-	"github.com/gorilla/mux"
 	"net/http"
 	"path/filepath"
+
+	"github.com/gorilla/mux"
 )
 
 // Supplied information
@@ -39,7 +41,7 @@ var instWebdir string
 /// Configuration
 
 var (
-	uploaddir = "images"
+	uploaddir  = "images"
 	dbfilename = "paperless.sqlite3"
 )
 
@@ -54,7 +56,7 @@ type progPreferences struct {
 var preferences = progPreferences{
 	datadir: "./target",
 	webdir:  "./web/",
-	server: "http://localhost:8078",
+	server:  "http://localhost:8078",
 	verbose: false,
 }
 
@@ -114,7 +116,7 @@ func createUploadRequest(url string, path string) (req *http.Request) {
 	writer := multipart.NewWriter(&buf)
 	part, err := writer.CreateFormFile("image", fp.Name())
 	check(err)
-	_,err = io.Copy(part,fp)
+	_, err = io.Copy(part, fp)
 	// _, err = part.Write(data)
 	check(err)
 	err = writer.Close()
@@ -144,7 +146,7 @@ func ocrAndUpload(fname string, url string) {
 	defer fp.Close()
 	tmpname := fp.Name()
 
-	cmd := exec.Command(path.Join(preferences.webdir,"process.sh"), "ocr", fname, fp.Name())
+	cmd := exec.Command(path.Join(preferences.webdir, "process.sh"), "ocr", fname, fp.Name())
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Println("Command failed, output", output)
@@ -168,28 +170,28 @@ func ocrAndUpload(fname string, url string) {
 
 	// Upload the data to server
 	buf := bytes.NewBuffer(data)
-	req,err := http.NewRequest("POST", url + "/images", buf)
+	req, err := http.NewRequest("POST", url+"/images", buf)
 	check(err)
-	req.Header.Set("Content-type","application/json")
+	req.Header.Set("Content-type", "application/json")
 	client := &http.Client{}
-	resp,err := client.Do(req)
+	resp, err := client.Do(req)
 	check(err)
 	defer resp.Body.Close()
 
-	fmt.Println("Status:",resp.Status)
-	fmt.Println("Headers:",resp.Header)
-	data,err = ioutil.ReadAll(resp.Body)
+	fmt.Println("Status:", resp.Status)
+	fmt.Println("Headers:", resp.Header)
+	data, err = ioutil.ReadAll(resp.Body)
 	check(err)
-	fmt.Println("Body:",string(data))
+	fmt.Println("Body:", string(data))
 
 	// Uploading the picture
 	err = json.Unmarshal(data, &image)
 	check(err)
 
-	uploadURL := fmt.Sprintf(url + "/images/upload/%d", image.Id)
+	uploadURL := fmt.Sprintf(url+"/images/upload/%d", image.Id)
 	fmt.Println("Uploadurl on ", uploadURL)
 	req = createUploadRequest(uploadURL, fname)
-	_ ,err = client.Do(req)
+	_, err = client.Do(req)
 	check(err)
 }
 
@@ -204,14 +206,14 @@ func upload(fname string, url string, tags []string) {
 
 	// Update the information
 	var image img
-	data,err := ioutil.ReadAll(resp.Body)
+	data, err := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
 	check(err)
 
 	if resp.StatusCode != http.StatusCreated {
 		type jsonerror struct {
 			Error string
-		};
+		}
 		var jerr jsonerror
 		err = json.Unmarshal(data, &jerr)
 		check(err)
@@ -221,7 +223,7 @@ func upload(fname string, url string, tags []string) {
 	err = json.Unmarshal(data, &image)
 	check(err)
 
-	info,err := os.Stat(fname)
+	info, err := os.Stat(fname)
 	image.TmScanned = info.ModTime().Unix()
 	image.Tags = tags
 
@@ -230,11 +232,11 @@ func upload(fname string, url string, tags []string) {
 	check(err)
 
 	buf := bytes.NewBuffer(data)
-	req,err = http.NewRequest("POST", fmt.Sprintf("%s/images/%d",url,image.Id), buf)
+	req, err = http.NewRequest("POST", fmt.Sprintf("%s/images/%d", url, image.Id), buf)
 	check(err)
 
-	req.Header.Set("Content-type","application/json")
-	resp,err = client.Do(req)
+	req.Header.Set("Content-type", "application/json")
+	resp, err = client.Do(req)
 	check(err)
 }
 
@@ -243,7 +245,7 @@ func mainAdd(c *cli.Context) {
 	preferences.verbose = c.GlobalBool("verbose")
 	preferences.server = c.String("server-url")
 
-	tags := strings.Split(c.String("tags"),",")
+	tags := strings.Split(c.String("tags"), ",")
 
 	if len(tags) == 0 {
 		log.Panic("Initial tags must be given for images.")
@@ -251,7 +253,7 @@ func mainAdd(c *cli.Context) {
 
 	for _, fname := range c.Args() {
 		if preferences.verbose {
-			log.Println("Uploading image",fname)
+			log.Println("Uploading image", fname)
 		}
 		func() {
 			defer func() {
@@ -279,7 +281,7 @@ func openDbFile(dbfile string) database {
 		create = true
 	}
 
-	db, err := sqlx.Open("sqlite3", fmt.Sprintf("file:%s?cache=shared&mode=rwc",dbfile))
+	db, err := sqlx.Open("sqlite3", fmt.Sprintf("file:%s?cache=shared&mode=rwc", dbfile))
 	check(err)
 
 	if create {
@@ -346,7 +348,7 @@ func (tx databaseTx) updateTags(image *img) {
 		_, err = tx.Exec("INSERT OR IGNORE INTO tag(name) VALUES ($1)",
 			image.Tags[i])
 		check(err)
-		_, err = tx.Exec("INSERT INTO imgtag(tagid,imgid) " +
+		_, err = tx.Exec("INSERT INTO imgtag(tagid,imgid) "+
 			"SELECT tag.id, $1 FROM tag WHERE tag.name = $2", image.Id, image.Tags[i])
 		check(err)
 	}
@@ -361,7 +363,7 @@ func (db database) addImage(image *img) {
 	tx := databaseTx{sqltx}
 	check(err)
 
-	_, err = tx.NamedExec("INSERT INTO img(checksum,fileid,processlog,filename) " +
+	_, err = tx.NamedExec("INSERT INTO img(checksum,fileid,processlog,filename) "+
 		"VALUES (:checksum,:fileid,:processlog,:filename)", image)
 	check(err)
 	tmp := img{}
@@ -378,7 +380,7 @@ func (db database) addImage(image *img) {
 }
 
 func (db database) getTags(image *img) {
-	err := db.Select(&image.Tags, "SELECT tag.name FROM imgtag, tag " +
+	err := db.Select(&image.Tags, "SELECT tag.name FROM imgtag, tag "+
 		"WHERE imgtag.imgid = $1 AND tag.id = imgtag.tagid", image.Id)
 	check(err)
 }
@@ -426,19 +428,21 @@ func (db database) getAllImages(limit int, offset int, search string) (count int
 	var ids []int
 
 	if search != "" {
-		err = db.Select(&ids,"SELECT rowid FROM imgtext WHERE imgtext.text MATCH ?", search)
+		err = db.Select(&ids, "SELECT rowid FROM imgtext WHERE imgtext.text MATCH ?", search)
 		check(err)
 		count = len(ids)
-		if count == 0 { return }
+		if count == 0 {
+			return
+		}
 
-		err = db.Select(&images, "SELECT * from img, imgtext " +
+		err = db.Select(&images, "SELECT * from img, imgtext "+
 			"WHERE imgtext.text MATCH ? AND imgtext.rowid = img.id LIMIT ? OFFSET ?",
 			search, limit, offset)
 	} else {
-		err = db.Select(&ids,"SELECT id from img")
+		err = db.Select(&ids, "SELECT id from img")
 		check(err)
 		count = len(ids)
-		err = db.Select(&images, "SELECT * from img, imgtext " +
+		err = db.Select(&images, "SELECT * from img, imgtext "+
 			"WHERE imgtext.rowid = img.id LIMIT ? OFFSET ?",
 			limit, offset)
 	}
@@ -446,7 +450,7 @@ func (db database) getAllImages(limit int, offset int, search string) (count int
 
 	for i := range images {
 		db.getTags(&images[i])
-		images[i].Fileid = filepath.Base(imagePath(&images[i],""))
+		images[i].Fileid = filepath.Base(imagePath(&images[i], ""))
 	}
 
 	return
@@ -504,9 +508,9 @@ func listImages(w http.ResponseWriter, r *http.Request) {
 	count, images := db.getAllImages(limit, offset, search)
 
 	response := imageResponse{
-		Limit: limit,
+		Limit:  limit,
 		Offset: offset,
-		Count: count,
+		Count:  count,
 		Images: images,
 	}
 
@@ -541,7 +545,7 @@ func receiveFile(image *img, r *http.Request) {
 	check(err)
 	defer fp.Close()
 
-	_,err = io.Copy(fp, file)
+	_, err = io.Copy(fp, file)
 	check(err)
 
 	// TODO error out if checksums differ
@@ -616,7 +620,7 @@ func receiveNewImage(w http.ResponseWriter, r *http.Request) {
 		Job: func() {
 			// Run through OCR
 			log.Println("Processing", origpath)
-			cmd := exec.Command(path.Join(preferences.webdir,"process.sh"), origpath, tgtimgpath, thumbpath)
+			cmd := exec.Command(path.Join(preferences.webdir, "process.sh"), origpath, tgtimgpath, thumbpath)
 			output, err := cmd.CombinedOutput()
 			if err != nil {
 				log.Println("Command failed, output", string(output))
@@ -644,7 +648,6 @@ func receiveNewImage(w http.ResponseWriter, r *http.Request) {
 
 	handleResponse(image, http.StatusCreated, w, r)
 }
-
 
 func updateImage(w http.ResponseWriter, r *http.Request) {
 
@@ -674,13 +677,13 @@ func updateImage(w http.ResponseWriter, r *http.Request) {
 }
 
 func httpErrorWrap(handler http.Handler) http.Handler {
-	return http.HandlerFunc(func (w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		defer func() {
 			if err := recover(); err != nil {
 				w.WriteHeader(http.StatusBadRequest)
-				w.Header().Set("Content-type","application/json")
-				fmt.Fprintf(w,`{"error" : "%s"}`, err)
+				w.Header().Set("Content-type", "application/json")
+				fmt.Fprintf(w, `{"error" : "%s"}`, err)
 				log.Printf("%s %s %s Error: %s", r.RemoteAddr, r.Method, r.URL, err)
 			}
 		}()
@@ -689,7 +692,7 @@ func httpErrorWrap(handler http.Handler) http.Handler {
 }
 
 func httpLogWrap(handler http.Handler) http.Handler {
-	return http.HandlerFunc(func (w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("%s %s %s", r.RemoteAddr, r.Method, r.URL)
 		handler.ServeHTTP(w, r)
 	})
@@ -736,8 +739,20 @@ func mainStartWeb(c *cli.Context) {
 }
 
 func main() {
-	if instDatadir != "" { preferences.datadir = instDatadir }
-	if instWebdir != "" { preferences.webdir = instWebdir }
+	opts := util.GetOptions()
+
+	opts.Set("print-routes", "t")
+
+	paperless.StartWeb(opts)
+}
+
+func main2() {
+	if instDatadir != "" {
+		preferences.datadir = instDatadir
+	}
+	if instWebdir != "" {
+		preferences.webdir = instWebdir
+	}
 
 	app := cli.NewApp()
 	app.Name = "paperless"
