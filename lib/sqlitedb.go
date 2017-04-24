@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS tag (
 
 -- The image data
 CREATE TABLE IF NOT EXISTS img (
- id INTEGER PRIMARY KEY ASC AUTOINCREMENT,
+  id INTEGER PRIMARY KEY ASC AUTOINCREMENT,
   checksum TEXT UNIQUE ON CONFLICT ABORT,	-- checksum of the file
   fileid TEXT DEFAULT "",                       -- used to construct the processed image,
 						--   thumbnail and text files
@@ -66,6 +66,14 @@ CREATE TABLE IF NOT EXISTS imgtag (
   tagid INTEGER REFERENCES tag(id) NOT NULL,
   imgid INTEGER REFERENCES img(id) NOT NULL
 );
+
+-- Script for processing the images
+CREATE TABLE IF NOT EXISTS script (
+  id INTEGER PRIMARY KEY ASC AUTOINCREMENT,
+  name TEXT UNIQUE ON CONFLICT ABORT,
+  script TEXT UNIQUE ON CONFLICT ABORT,
+);
+
 `)
 		if err != nil {
 			goto initfail
@@ -86,3 +94,20 @@ initfail:
 	ret = nil
 	return
 }
+
+func (d *db) getTags() (ret []Tag, err error) {
+	return
+}
+
+func (d *db) addTag(t Tag) (err error) {
+	return
+}
+
+func (d *db) updateTag(t Tag) (err error) {
+	return
+}
+
+func (d *db) deleteTag(t Tag) (err error) {
+	return
+}
+

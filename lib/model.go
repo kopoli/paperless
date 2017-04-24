@@ -27,3 +27,8 @@ type Tag struct {
 	Name string
 	Comment string
 }
+
+type Script struct {
+	Name string
+	Script string
+}
