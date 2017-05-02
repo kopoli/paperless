@@ -3,12 +3,16 @@ package paperless
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/jmoiron/sqlx"
+	_ "github.com/mattn/go-sqlite3"
+
 	"github.com/kopoli/go-util"
 )
 
 type db struct {
+	file string
 	*sqlx.DB
 }
 
@@ -16,8 +20,25 @@ type dbTx struct {
 	*sqlx.Tx
 }
 
+// Pagination support
+type Page struct {
+	// Id that was the last of the previous page
+	SinceId int
+
+	// Count is the number of items in the page
+	Count int
+}
+
 func openDbFile(dbfile string) (ret *db, err error) {
 	create := false
+
+	dbfile = filepath.Clean(dbfile)
+
+	i, err := os.Stat(dbfile)
+	if err == nil && i.IsDir() {
+		err = util.E.New("Given path is a directory")
+		return
+	}
 
 	if _, err = os.Stat(dbfile); os.IsNotExist(err) {
 		create = true
@@ -34,7 +55,8 @@ func openDbFile(dbfile string) (ret *db, err error) {
 		_, err = d.Exec(`
 CREATE TABLE IF NOT EXISTS tag (
   id INTEGER PRIMARY KEY,
-  name TEXT UNIQUE ON CONFLICT IGNORE
+  name TEXT DEFAULT "" NOT NULL UNIQUE ON CONFLICT ABORT,
+  comment TEXT DEFAULT ""
 );
 
 -- The image data
@@ -71,7 +93,7 @@ CREATE TABLE IF NOT EXISTS imgtag (
 CREATE TABLE IF NOT EXISTS script (
   id INTEGER PRIMARY KEY ASC AUTOINCREMENT,
   name TEXT UNIQUE ON CONFLICT ABORT,
-  script TEXT UNIQUE ON CONFLICT ABORT,
+  script TEXT UNIQUE ON CONFLICT ABORT
 );
 
 `)
@@ -85,7 +107,7 @@ CREATE TABLE IF NOT EXISTS script (
 		goto initfail
 	}
 
-	ret = &db{d}
+	ret = &db{dbfile, d}
 	return
 
 initfail:
@@ -95,19 +117,45 @@ initfail:
 	return
 }
 
-func (d *db) getTags() (ret []Tag, err error) {
+func (db *db) getTags(p *Page) (ret []Tag, err error) {
+	query := "SELECT * from tag"
+	sel := func() error {
+		return db.Select(&ret, query)
+	}
+
+	if p != nil {
+		query += "WHERE id < ? ORDER BY name DESC LIMIT ?"
+		sel = func() error {
+			return db.Select(&ret, query, p.SinceId, p.Count)
+		}
+	}
+
+	err = sel()
 	return
 }
 
-func (d *db) addTag(t Tag) (err error) {
+func (db *db) addTag(t Tag) (err error) {
+	_, err = db.Exec("INSERT INTO tag(name, comment) VALUES($1, $2)", t.Name, t.Comment)
 	return
 }
 
-func (d *db) updateTag(t Tag) (err error) {
+func (db *db) upsertTag(t Tag) (err error) {
+	tx, err := db.Beginx()
+	if err != nil {
+		return
+	}
+
+	_, _ = tx.Exec("UPDATE tag SET comment = $1 WHERE name = $2", t.Comment, t.Name)
+	_, err = tx.Exec("INSERT OR IGNORE INTO tag(name, comment) VALUES($1, $2)", t.Name, t.Comment)
+	if err != nil {
+		return
+	}
+
+	err = tx.Commit()
 	return
 }
 
-func (d *db) deleteTag(t Tag) (err error) {
+func (db *db) deleteTag(t Tag) (err error) {
+	_, err = db.Exec("DELETE FROM tag WHERE name = $1", t.Name)
 	return
 }
-

@@ -24,6 +24,7 @@ type Image struct {
 }
 
 type Tag struct {
+	Id int
 	Name string
 	Comment string
 }
