@@ -72,7 +72,7 @@ func (t testFunc) run(d *db) error {
 	return t(d)
 }
 
-func Test_db_addTag(t *testing.T) {
+func Test_db_Tag(t *testing.T) {
 	at := func(name, comment string) testFunc {
 		return func(d *db) error {
 			return d.addTag(Tag{Name: name, Comment: comment})
@@ -95,20 +95,26 @@ func Test_db_addTag(t *testing.T) {
 		name     string
 		ops      []testOp
 		wantErr  bool
+		paging   *Page
 		wantTags []Tag
 	}{
-		{"Add empty tag", []testOp{at("", "")}, false, []Tag{Tag{Id: 1}}},
-		{"Add tag with contents", []testOp{at("name", "")}, false, []Tag{Tag{Id: 1, Name: "name"}}},
+		{"Add empty tag", []testOp{at("", "")}, false, nil, []Tag{Tag{Id: 1}}},
+		{"Add tag with contents", []testOp{at("name", "")}, false, nil, []Tag{Tag{Id: 1, Name: "name"}}},
 		{"Add tag and remove it", []testOp{
 			at("name", ""), at("abc", ""), dt("name"),
-		}, false, []Tag{Tag{Id: 2, Name: "abc"}}},
+		}, false, nil, []Tag{Tag{Id: 2, Name: "abc"}}},
 		{"Add tag and update it", []testOp{
 			at("name", ""), ut("name", "comment"),
-		}, false, []Tag{Tag{Id: 1, Name: "name", Comment: "comment"}}},
+		}, false, nil, []Tag{Tag{Id: 1, Name: "name", Comment: "comment"}}},
 		{"Upsert a tag", []testOp{
 			ut("name", "comment"), ut("other", ""),
-		}, false, []Tag{Tag{Id: 1, Name: "name", Comment: "comment"}, Tag{Id: 2, Name: "other"}}},
-
+		}, false, nil, []Tag{Tag{Id: 1, Name: "name", Comment: "comment"}, Tag{Id: 2, Name: "other"}}},
+		{"Add duplicate", []testOp{
+			at("name", ""), at("name", "other"),
+		}, true, nil, []Tag{Tag{Id: 1, Name: "name"}}},
+		{"Pagination", []testOp{
+			at("f1", ""), at("f2", ""), at("f3", ""), at("f4", ""),
+		}, false, &Page{SinceId: 2, Count: 5}, []Tag{Tag{Id: 3, Name: "f3"}, Tag{Id: 4, Name: "f4"}}},
 	}
 	for _, tt := range tests {
 		db, err := setupDb()
@@ -139,7 +145,7 @@ func Test_db_addTag(t *testing.T) {
 				return
 			}
 
-			tags, err := db.getTags(nil)
+			tags, err := db.getTags(tt.paging)
 			if err != nil {
 				t.Errorf("db.getTags() error = %v", err)
 			}

@@ -54,7 +54,7 @@ func openDbFile(dbfile string) (ret *db, err error) {
 	if create {
 		_, err = d.Exec(`
 CREATE TABLE IF NOT EXISTS tag (
-  id INTEGER PRIMARY KEY,
+  id INTEGER PRIMARY KEY ASC AUTOINCREMENT,
   name TEXT DEFAULT "" NOT NULL UNIQUE ON CONFLICT ABORT,
   comment TEXT DEFAULT ""
 );
@@ -119,12 +119,13 @@ initfail:
 
 func (db *db) getTags(p *Page) (ret []Tag, err error) {
 	query := "SELECT * from tag"
+	order := " ORDER BY name ASC"
 	sel := func() error {
-		return db.Select(&ret, query)
+		return db.Select(&ret, query + order)
 	}
 
 	if p != nil {
-		query += "WHERE id < ? ORDER BY name DESC LIMIT ?"
+		query += " WHERE (id > ?) " + order + " LIMIT ?"
 		sel = func() error {
 			return db.Select(&ret, query, p.SinceId, p.Count)
 		}
