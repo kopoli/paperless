@@ -30,6 +30,7 @@ type Tag struct {
 }
 
 type Script struct {
+	Id int
 	Name string
 	Script string
 }

@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS imgtag (
 CREATE TABLE IF NOT EXISTS script (
   id INTEGER PRIMARY KEY ASC AUTOINCREMENT,
   name TEXT UNIQUE ON CONFLICT ABORT,
-  script TEXT UNIQUE ON CONFLICT ABORT
+  script TEXT DEFAULT ""
 );
 
 `)
@@ -158,5 +158,38 @@ func (db *db) upsertTag(t Tag) (err error) {
 
 func (db *db) deleteTag(t Tag) (err error) {
 	_, err = db.Exec("DELETE FROM tag WHERE name = $1", t.Name)
+	return
+}
+
+func (db *db) getScripts(p *Page) (ret []Script, err error) {
+	query := "SELECT * from script"
+	order := " ORDER BY name ASC"
+	sel := func() error {
+		return db.Select(&ret, query + order)
+	}
+
+	if p != nil {
+		query += " WHERE (id > ?) " + order + " LIMIT ?"
+		sel = func() error {
+			return db.Select(&ret, query, p.SinceId, p.Count)
+		}
+	}
+
+	err = sel()
+	return
+}
+
+func (db *db) addScript(s Script) (err error) {
+	_, err = db.Exec("INSERT INTO script(name, script) VALUES($1, $2)", s.Name, s.Script)
+	return
+}
+
+func (db *db) updateScript(s Script) (err error) {
+	_, err = db.Exec("UPDATE script SET script = $1 WHERE name = $2", s.Script, s.Name)
+	return
+}
+
+func (db *db) deleteScript(s Script) (err error) {
+	_, err = db.Exec("DELETE FROM script WHERE name = $1", s.Name)
 	return
 }
