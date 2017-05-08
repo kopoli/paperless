@@ -1,36 +1,34 @@
 package paperless
 
+import "time"
+
 type Image struct {
 	// in img
 	Id            int
 	Checksum      string
 	Fileid        string
-	IsDiscarded   int
-	ParentId      int
-	TmScanned     int64
-	TmProcessed   int64
-	TmReinterpret int64
+	ScanDate      time.Time
+	AddDate       time.Time
+	InterpretDate time.Time
 	ProcessLog    string
 	Filename      string
-	IsUploaded    int
-	IsToBeOcrd    int
 
 	// in imgtext
 	Text    string
 	Comment string
 
 	// in tags
-	Tags []string
+	tags []Tag
 }
 
 type Tag struct {
-	Id int
-	Name string
+	Id      int
+	Name    string
 	Comment string
 }
 
 type Script struct {
-	Id int
-	Name string
+	Id     int
+	Name   string
 	Script string
 }

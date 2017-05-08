@@ -29,6 +29,11 @@ type Page struct {
 	Count int
 }
 
+type Search struct {
+	Where   string
+	OrderBy string
+}
+
 func openDbFile(dbfile string) (ret *db, err error) {
 	create := false
 
@@ -60,22 +65,17 @@ CREATE TABLE IF NOT EXISTS tag (
 );
 
 -- The image data
-CREATE TABLE IF NOT EXISTS img (
+CREATE TABLE IF NOT EXISTS image (
   id INTEGER PRIMARY KEY ASC AUTOINCREMENT,
-  checksum TEXT UNIQUE ON CONFLICT ABORT,	-- checksum of the file
+  checksum TEXT UNIQUE NOT NULL ON CONFLICT ABORT,-- checksum of the file
   fileid TEXT DEFAULT "",                       -- used to construct the processed image,
 						--   thumbnail and text files
-  isdiscarded INTEGER DEFAULT 0,                -- Should the image be ignored on ocr
-  parentid INTEGER DEFAULT -1,                  -- ID of a parent image
-  tmscanned INTEGER DEFAULT 0,                  -- timestamp when it was scanned
-  tmprocessed INTEGER DEFAULT 0,                -- timestamp when it was processed
-  tmreinterpret INTEGER DEFAULT 0,              -- timestamp when it was reinterpret
+  scandate DATETIME,                            -- timestamp when it was scanned
+  adddate  DATETIME DEFAULT CURRENT_TIMESTAMP,  -- timestamp when it was created in db
+  interpretdate DATETIME,                       -- timestamp when it was interpret
 
   processlog TEXT DEFAULT "",                   -- Log of processing
-  filename TEXT DEFAULT "",                     -- The original filename
-  isuploaded INTEGER DEFAULT 0,                 -- has a real image been uploaded to paperless yet.
-
-  istobeocrd INTEGER DEFAULT 0			-- Needs to be re-ocr'd
+  filename TEXT DEFAULT ""                     -- The original filename
 );
 
 CREATE VIRTUAL TABLE IF NOT EXISTS imgtext USING fts4 (
@@ -86,7 +86,8 @@ CREATE VIRTUAL TABLE IF NOT EXISTS imgtext USING fts4 (
 -- Tags for an image
 CREATE TABLE IF NOT EXISTS imgtag (
   tagid INTEGER REFERENCES tag(id) NOT NULL,
-  imgid INTEGER REFERENCES img(id) NOT NULL
+  imgid INTEGER REFERENCES img(id) NOT NULL,
+  UNIQUE (tagid, imgid)
 );
 
 -- Script for processing the images
@@ -121,7 +122,7 @@ func (db *db) getTags(p *Page) (ret []Tag, err error) {
 	query := "SELECT * from tag"
 	order := " ORDER BY name ASC"
 	sel := func() error {
-		return db.Select(&ret, query + order)
+		return db.Select(&ret, query+order)
 	}
 
 	if p != nil {
@@ -165,7 +166,7 @@ func (db *db) getScripts(p *Page) (ret []Script, err error) {
 	query := "SELECT * from script"
 	order := " ORDER BY name ASC"
 	sel := func() error {
-		return db.Select(&ret, query + order)
+		return db.Select(&ret, query+order)
 	}
 
 	if p != nil {
@@ -191,5 +192,111 @@ func (db *db) updateScript(s Script) (err error) {
 
 func (db *db) deleteScript(s Script) (err error) {
 	_, err = db.Exec("DELETE FROM script WHERE name = $1", s.Name)
+	return
+}
+
+func withTx(db *db, f func(*sqlx.Tx) error) (err error) {
+	tx, err := db.Beginx()
+	if err != nil {
+		return
+	}
+
+	err = f(tx)
+	if err != nil {
+		tx.Rollback()
+		return
+	}
+
+	err = tx.Commit()
+	return
+}
+
+func (db *db) getImages(p *Page, s *Search) (ret []Image, err error) {
+	query := "SELECT * FROM image, imgtext"
+	order := " ORDER BY image.id ASC"
+
+	where := " WHERE imgtext.rowid = image.id"
+
+	args := map[string]interface{}{}
+
+	if s != nil {
+		where = where + " AND imgtext.text MATCH :where"
+		args["where"] = s.Where
+		order = " ORDER by :order ASC"
+		args["order"] = s.OrderBy
+	}
+	if p != nil {
+		where = where + " AND (image.id > :id)"
+		args["id"] = fmt.Sprintf("%d", p.SinceId)
+		order = order + " LIMIT :limit"
+		args["limit"] = fmt.Sprintf("%d", p.Count)
+	}
+
+	query = query + where + order
+
+	fmt.Println("Query on", query)
+
+	nstmt, err := db.PrepareNamed(query)
+	if err != nil {
+		return
+	}
+	defer nstmt.Close()
+
+	err = nstmt.Select(&ret, args)
+	return
+}
+
+func (db *db) addImage(i Image) (err error) {
+	err = withTx(db, func(tx *sqlx.Tx) (err error) {
+		_, err = tx.NamedExec(`INSERT INTO
+                   image(  checksum,  fileid,  scandate,  adddate,  interpretdate,  processlog,  filename)
+                   VALUES(:checksum, :fileid, :scandate, :adddate, :interpretdate, :processlog, :filename)`, i)
+		if err != nil {
+			return
+		}
+
+		var id int
+		err = tx.Get(&id, "SELECT id FROM image WHERE checksum=$1", i.Checksum)
+		if err != nil {
+			return
+		}
+		i.Id = id
+
+		_, err = tx.NamedExec(`INSERT INTO imgtext(rowid, text, comment) VALUES (:id, :text, :comment)`, i)
+		return
+	})
+	return
+}
+
+func (db *db) updateImage(s Image) (err error) {
+	err = withTx(db, func(tx *sqlx.Tx) (err error) {
+		_, err = tx.NamedExec(`UPDATE image SET
+                      interpretdate = :interpretdate,
+                      processlog = :processlog
+                      WHERE image.id = :id`, s)
+
+		if err != nil {
+			return
+		}
+
+		_, err = tx.NamedExec(`UPDATE imgtext SET
+                      text = :text,
+                      comment = :comment
+                      WHERE rowid = :id`, s)
+		return
+	})
+	return
+}
+
+func (db *db) deleteImage(s Image) (err error) {
+	err = withTx(db, func(tx *sqlx.Tx) (err error) {
+		_, err = tx.Exec(`DELETE FROM imgtext WHERE rowid IN
+                                  (SELECT id FROM image WHERE image.checksum = $1)`, s.Checksum)
+		if err != nil {
+			return
+		}
+		_, err = tx.Exec(`DELETE FROM image WHERE image.checksum = $1`, s.Checksum)
+		return
+	})
 	return
 }
