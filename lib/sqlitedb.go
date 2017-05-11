@@ -141,19 +141,8 @@ func (db *db) addTag(t Tag) (err error) {
 	return
 }
 
-func (db *db) upsertTag(t Tag) (err error) {
-	tx, err := db.Beginx()
-	if err != nil {
-		return
-	}
-
-	_, _ = tx.Exec("UPDATE tag SET comment = $1 WHERE name = $2", t.Comment, t.Name)
-	_, err = tx.Exec("INSERT OR IGNORE INTO tag(name, comment) VALUES($1, $2)", t.Name, t.Comment)
-	if err != nil {
-		return
-	}
-
-	err = tx.Commit()
+func (db *db) updateTag(t Tag) (err error) {
+	_, err = db.Exec("UPDATE tag SET comment = $1 WHERE name = $2", t.Comment, t.Name)
 	return
 }
 

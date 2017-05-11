@@ -112,7 +112,7 @@ func Test_db_Tag(t *testing.T) {
 
 	ut := func(name, comment string) testFunc {
 		return func(d *db) error {
-			return d.upsertTag(Tag{Name: name, Comment: comment})
+			return d.updateTag(Tag{Name: name, Comment: comment})
 		}
 	}
 
@@ -131,9 +131,9 @@ func Test_db_Tag(t *testing.T) {
 		{"Add tag and update it", []testOp{
 			at("name", ""), ut("name", "comment"),
 		}, false, nil, []Tag{Tag{Id: 1, Name: "name", Comment: "comment"}}},
-		{"Upsert a tag", []testOp{
-			ut("name", "comment"), ut("other", ""),
-		}, false, nil, []Tag{Tag{Id: 1, Name: "name", Comment: "comment"}, Tag{Id: 2, Name: "other"}}},
+		{"Update a tag", []testOp{
+			at("name", ""), ut("name", "comment"),
+		}, false, nil, []Tag{Tag{Id: 1, Name: "name", Comment: "comment"}}},
 		{"Add duplicate", []testOp{
 			at("name", ""), at("name", "other"),
 		}, true, nil, []Tag{Tag{Id: 1, Name: "name"}}},
