@@ -741,9 +741,12 @@ func mainStartWeb(c *cli.Context) {
 func main() {
 	opts := util.GetOptions()
 
-	opts.Set("print-routes", "t")
+	// opts.Set("print-routes", "t")
 
-	paperless.StartWeb(opts)
+	err := paperless.StartWeb(opts)
+	if err != nil {
+		fmt.Println("Starting paperless web server failed with:", err)
+	}
 }
 
 func main2() {

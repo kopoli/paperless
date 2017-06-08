@@ -118,6 +118,38 @@ initfail:
 	return
 }
 
+func (db *db) getItem(ret interface{}, table string, id int) (err error) {
+	return db.Get(ret, "SELECT * from $1 WHERE id = $2", table, id)
+}
+
+func (db *db) getTag(id int) (ret Tag, err error) {
+	err = db.getItem(&ret, "tag", id)
+	return
+}
+
+func (db *db) getScript(id int) (ret Script, err error) {
+	err = db.getItem(&ret, "script", id)
+	return
+}
+
+func (db *db) getImage(id int) (ret Image, err error) {
+	if id < 0 {
+		err = util.E.New("Negative ID for image is invalid")
+		return
+	}
+
+	imgs, err := db.getImages(nil, &Search{Where: fmt.Sprintf("AND image.id = %d", id)})
+	if err != nil {
+		return
+	}
+	if len(imgs) > 1 {
+		err = util.E.New("Internal error: Multiple images with the same id")
+		return
+	}
+	ret = imgs[0]
+	return
+}
+
 func (db *db) getTags(p *Page) (ret []Tag, err error) {
 	query := "SELECT * from tag"
 	order := " ORDER BY name ASC"
@@ -136,8 +168,13 @@ func (db *db) getTags(p *Page) (ret []Tag, err error) {
 	return
 }
 
-func (db *db) addTag(t Tag) (err error) {
+func (db *db) addTag(t Tag) (ret Tag, err error) {
 	_, err = db.Exec("INSERT INTO tag(name, comment) VALUES($1, $2)", t.Name, t.Comment)
+	if err != nil {
+		return
+	}
+	err = db.Get(&ret, "SELECT * FROM tag WHERE name = $1", t.Name)
+
 	return
 }
 
@@ -209,7 +246,7 @@ func (db *db) getImages(p *Page, s *Search) (ret []Image, err error) {
 	args := map[string]interface{}{}
 
 	if s != nil {
-		where = where + " AND imgtext.text MATCH :where"
+		where = where + " AND imgtext.text :where"
 		args["where"] = s.Where
 		order = " ORDER by :order ASC"
 		args["order"] = s.OrderBy
