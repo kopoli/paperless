@@ -223,8 +223,6 @@ func (db *db) getImages(p *Page, s *Search) (ret []Image, err error) {
 
 	query = query + where + order
 
-	fmt.Println("Query on", query)
-
 	nstmt, err := db.PrepareNamed(query)
 	if err != nil {
 		return
@@ -245,7 +243,7 @@ func (db *db) getImages(p *Page, s *Search) (ret []Image, err error) {
 			}
 		}
 		return
-	});
+	})
 	return
 }
 
