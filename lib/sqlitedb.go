@@ -232,6 +232,35 @@ func (db *db) getImages(p *Page, s *Search) (ret []Image, err error) {
 	defer nstmt.Close()
 
 	err = nstmt.Select(&ret, args)
+	if err != nil {
+		return
+	}
+
+	err = withTx(db, func(tx *sqlx.Tx) (err error) {
+		for i := range ret {
+			err = tx.Select(&ret[i].Tags, `SELECT tag.id, tag.name, tag.comment FROM tag, imgtag
+                                                       WHERE imgtag.tagid = tag.id AND imgtag.imgid = $1 `, ret[i].Id)
+			if err != nil {
+				return
+			}
+		}
+		return
+	});
+	return
+}
+
+func syncTagsToImage(tx *sqlx.Tx, i Image) (err error) {
+	_, err = tx.NamedExec(`DELETE FROM imgtag WHERE imgid = :id`, i)
+	if err != nil {
+		return
+	}
+
+	for _, t := range i.Tags {
+		_, err = tx.Exec(`INSERT INTO imgtag(imgid, tagid) SELECT $1, tag.id FROM tag WHERE tag.name = $2`, i.Id, t.Name)
+		if err != nil {
+			return
+		}
+	}
 	return
 }
 
@@ -252,18 +281,22 @@ func (db *db) addImage(i Image) (err error) {
 		i.Id = id
 
 		_, err = tx.NamedExec(`INSERT INTO imgtext(rowid, text, comment) VALUES (:id, :text, :comment)`, i)
+		if err != nil {
+			return
+		}
+
+		err = syncTagsToImage(tx, i)
 		return
 	})
 	return
 }
 
-func (db *db) updateImage(s Image) (err error) {
+func (db *db) updateImage(i Image) (err error) {
 	err = withTx(db, func(tx *sqlx.Tx) (err error) {
 		_, err = tx.NamedExec(`UPDATE image SET
                       interpretdate = :interpretdate,
                       processlog = :processlog
-                      WHERE image.id = :id`, s)
-
+                      WHERE image.id = :id`, i)
 		if err != nil {
 			return
 		}
@@ -271,7 +304,12 @@ func (db *db) updateImage(s Image) (err error) {
 		_, err = tx.NamedExec(`UPDATE imgtext SET
                       text = :text,
                       comment = :comment
-                      WHERE rowid = :id`, s)
+                      WHERE rowid = :id`, i)
+		if err != nil {
+			return
+		}
+
+		err = syncTagsToImage(tx, i)
 		return
 	})
 	return
@@ -279,6 +317,11 @@ func (db *db) updateImage(s Image) (err error) {
 
 func (db *db) deleteImage(s Image) (err error) {
 	err = withTx(db, func(tx *sqlx.Tx) (err error) {
+		_, err = tx.Exec(`DELETE FROM imgtag WHERE imgid IN
+                                  (SELECT id FROM image WHERE image.checksum = $1)`, s.Checksum)
+		if err != nil {
+			return
+		}
 		_, err = tx.Exec(`DELETE FROM imgtext WHERE rowid IN
                                   (SELECT id FROM image WHERE image.checksum = $1)`, s.Checksum)
 		if err != nil {

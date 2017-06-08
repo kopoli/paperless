@@ -274,6 +274,12 @@ func Test_db_Script(t *testing.T) {
 }
 
 func Test_db_Image(t *testing.T) {
+	at := func(name, comment string) testFunc {
+		return func(d *db) error {
+			return d.addTag(Tag{Name: name, Comment: comment})
+		}
+	}
+
 	ai := func(i Image) testFunc {
 		return func(d *db) error {
 			return d.addImage(i)
@@ -329,6 +335,15 @@ func Test_db_Image(t *testing.T) {
 			ai(Image{Checksum: "f1"}), ai(Image{Checksum: "f2"}),
 			ai(Image{Checksum: "f3"}), ai(Image{Checksum: "f4"}),
 		}, false, &Page{SinceId: 2, Count: 5}, []Image{Image{Id: 3, Checksum: "f3"}, Image{Id: 4, Checksum: "f4"}}},
+		{"Add image with tags", []testOp{
+			at("eka",""), at("toka",""),
+			ai(Image{Checksum: "a", Text: "jeje", Tags: []Tag{Tag{Name: "toka"}}}),
+		}, false, nil, []Image{Image{Id: 1, Checksum: "a", Text: "jeje", Tags: []Tag{Tag{Id: 2, Name: "toka"}}}}},
+		{"Update image with tags", []testOp{
+			at("eka",""),
+			ai(Image{Checksum: "a"}),
+			ui(Image{Id: 1, Checksum: "a", Tags: []Tag{Tag{Id: 1, Name: "eka"}}}),
+		}, false, nil, []Image{Image{Id: 1, Checksum: "a", Tags: []Tag{Tag{Id: 1, Name: "eka"}}}}},
 	}
 	for _, tt := range tests {
 		db, err := setupDb()
@@ -364,10 +379,6 @@ func Test_db_Image(t *testing.T) {
 				t.Errorf("db.getImages() error = %v", err)
 			}
 
-			// if !compare(images, tt.wantImages) {
-			// 	t.Errorf("db.getImages() = %v, want %v", images, tt.wantImages)
-			// }
-			// compare(t, "db.getImages() not expected", tt.wantImages, images)
 			cmp(tt.wantImages, images)
 		})
 		db.Close()

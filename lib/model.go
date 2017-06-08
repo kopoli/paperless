@@ -18,7 +18,7 @@ type Image struct {
 	Comment string
 
 	// in tags
-	tags []Tag
+	Tags []Tag
 }
 
 type Tag struct {
