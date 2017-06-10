@@ -739,7 +739,7 @@ func mainStartWeb(c *cli.Context) {
 }
 
 func main() {
-	opts := util.GetOptions()
+	opts := util.NewOptions()
 
 	// opts.Set("print-routes", "t")
 
