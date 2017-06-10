@@ -90,6 +90,7 @@ func (b *backend) tagHandler(w http.ResponseWriter, r *http.Request) {
 			errsend(err)
 			return
 		}
+
 		jsend.Wrap(w).Status(http.StatusCreated).Data(t).Send()
 	case "GET":
 		p := getPaging(r)
@@ -105,9 +106,48 @@ func (b *backend) tagHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (b *backend) loadTagCtx(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	})
+func (b *backend) singleTagHandler(w http.ResponseWriter, r *http.Request) {
+
+	errsend := func(err error) {
+		b.respondErr(w, http.StatusBadRequest, err)
+	}
+	var t Tag
+
+	tagid, err := strconv.Atoi(chi.URLParam(r, "tagID"))
+	if err == nil {
+		t, err = b.db.getTag(tagid)
+	}
+	if err != nil {
+		err = util.E.Annotate(err, "Invalid tag ID from URL")
+		errsend(err)
+		return
+	}
+
+	switch r.Method {
+	case "GET":
+		jsend.Wrap(w).Status(http.StatusOK).Data(t).Send()
+	case "PUT":
+		var t2 Tag
+		err = requestJson(r, &t)
+		if err != nil {
+			errsend(err)
+			return
+		}
+		t.Comment = t2.Comment
+		err = b.db.updateTag(t)
+		if err != nil {
+			errsend(err)
+			return
+		}
+		jsend.Wrap(w).Status(http.StatusOK).Data(t).Send()
+	case "DELETE":
+		err = b.db.deleteTag(t)
+		if err != nil {
+			errsend(err)
+			return
+		}
+		jsend.Wrap(w).Status(http.StatusOK).Message("Deleted").Send()
+	}
 }
 
 /// Script handling
@@ -157,10 +197,9 @@ func StartWeb(o util.Options) (err error) {
 			r.Get("/", back.tagHandler)
 			r.Post("/", back.tagHandler)
 			r.Route("/:tagID", func(r chi.Router) {
-				r.Use(back.loadTagCtx)
-				r.Get("/", todoHandler)
-				r.Put("/", todoHandler)
-				r.Delete("/", todoHandler)
+				r.Get("/", back.singleTagHandler)
+				r.Put("/", back.singleTagHandler)
+				r.Delete("/", back.singleTagHandler)
 			})
 		})
 		r.Route("/script", func(r chi.Router) {

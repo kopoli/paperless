@@ -118,17 +118,13 @@ initfail:
 	return
 }
 
-func (db *db) getItem(ret interface{}, table string, id int) (err error) {
-	return db.Get(ret, "SELECT * from $1 WHERE id = $2", table, id)
-}
-
 func (db *db) getTag(id int) (ret Tag, err error) {
-	err = db.getItem(&ret, "tag", id)
+	err = db.Get(&ret, "SELECT * from tag WHERE id = $1", id)
 	return
 }
 
 func (db *db) getScript(id int) (ret Script, err error) {
-	err = db.getItem(&ret, "script", id)
+	err = db.Get(&ret, "SELECT * from script WHERE id = $1", id)
 	return
 }
 
