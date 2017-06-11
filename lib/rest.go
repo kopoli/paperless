@@ -73,22 +73,23 @@ func getPaging(r *http.Request) (ret *Page) {
 
 /// Tag handling
 func (b *backend) tagHandler(w http.ResponseWriter, r *http.Request) {
-
-	errsend := func(err error) {
-		b.respondErr(w, http.StatusBadRequest, err)
+	var err error
+	annotate := func(arg ...interface{}) {
+		err = util.E.Annotate(err, arg...)
 	}
+
 	switch r.Method {
 	case "POST":
 		var t Tag
-		err := requestJson(r, &t)
+		err = requestJson(r, &t)
 		if err != nil {
-			errsend(err)
-			return
+			annotate("JSON parsing failed")
+			goto requestError
 		}
 		t, err = b.db.addTag(t)
 		if err != nil {
-			errsend(err)
-			return
+			annotate("Adding tag to db failed")
+			goto requestError
 		}
 
 		jsend.Wrap(w).Status(http.StatusCreated).Data(t).Send()
@@ -97,20 +98,28 @@ func (b *backend) tagHandler(w http.ResponseWriter, r *http.Request) {
 
 		tags, err := b.db.getTags(p)
 		if err != nil {
-			errsend(err)
-			return
+			util.E.Annotate(err)
+			annotate("Getting tags from db failed")
+			goto requestError
 		}
 
 		jsend.Wrap(w).Status(http.StatusOK).Data(tags).Send()
 	}
 
+	return
+
+requestError:
+	b.respondErr(w, http.StatusBadRequest, err)
+	return
 }
 
 func (b *backend) singleTagHandler(w http.ResponseWriter, r *http.Request) {
 
-	errsend := func(err error) {
-		b.respondErr(w, http.StatusBadRequest, err)
+	var err error
+	annotate := func(arg ...interface{}) {
+		err = util.E.Annotate(err, arg...)
 	}
+
 	var t Tag
 
 	tagid, err := strconv.Atoi(chi.URLParam(r, "tagID"))
@@ -118,9 +127,8 @@ func (b *backend) singleTagHandler(w http.ResponseWriter, r *http.Request) {
 		t, err = b.db.getTag(tagid)
 	}
 	if err != nil {
-		err = util.E.Annotate(err, "Invalid tag ID from URL")
-		errsend(err)
-		return
+		annotate("Invalid tag ID from URL")
+		goto requestError
 	}
 
 	switch r.Method {
@@ -130,24 +138,30 @@ func (b *backend) singleTagHandler(w http.ResponseWriter, r *http.Request) {
 		var t2 Tag
 		err = requestJson(r, &t)
 		if err != nil {
-			errsend(err)
-			return
+			annotate("JSON parsing failed")
+			goto requestError
 		}
 		t.Comment = t2.Comment
 		err = b.db.updateTag(t)
 		if err != nil {
-			errsend(err)
-			return
+			annotate("Updating tag in db failed")
+			goto requestError
 		}
 		jsend.Wrap(w).Status(http.StatusOK).Data(t).Send()
 	case "DELETE":
 		err = b.db.deleteTag(t)
 		if err != nil {
-			errsend(err)
-			return
+			annotate("Deleting tag from db failed")
+			goto requestError
 		}
 		jsend.Wrap(w).Status(http.StatusOK).Message("Deleted").Send()
 	}
+
+	return
+
+requestError:
+	b.respondErr(w, http.StatusBadRequest, err)
+	return
 }
 
 /// Script handling
