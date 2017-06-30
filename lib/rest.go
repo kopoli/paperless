@@ -1,8 +1,10 @@
 package paperless
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"path"
@@ -164,6 +166,66 @@ requestError:
 	return
 }
 
+// Image handling
+
+func (b *backend) imageHandler(w http.ResponseWriter, r *http.Request) {
+	var err error
+	annotate := func(arg ...interface{}) {
+		err = util.E.Annotate(err, arg...)
+	}
+
+	imgdir := b.options.Get("imagedir", "images")
+
+	switch r.Method {
+	case "POST":
+		err = r.ParseMultipartForm(20 * 1024 * 1024)
+		if err != nil {
+			annotate("Parsing multipartform failed")
+			goto requestError
+		}
+		file, header, e2 := r.FormFile("image")
+		if e2 != nil {
+			err = e2
+			annotate("Could not find image from POST data")
+			goto requestError
+		}
+		buf := &bytes.Buffer{}
+		_, err = io.Copy(buf, file)
+		if err != nil {
+			annotate("Could not copy image data to buffer")
+			goto requestError
+		}
+
+		img, e2 := SaveImage(header.Filename,buf.Bytes(), b.db, imgdir)
+		if e2 != nil {
+			err = e2
+			annotate("Could not save image")
+			goto requestError
+		}
+
+		jsend.Wrap(w).Status(http.StatusCreated).Data(img).Send()
+	case "GET":
+		p := getPaging(r)
+
+		// query := r.URL.Query().Get("q")
+
+		images, e2 := b.db.getImages(p, nil)
+		if e2 != nil {
+			err = e2
+			annotate("Getting images from db failed")
+			goto requestError
+		}
+
+		jsend.Wrap(w).Status(http.StatusOK).Data(images).Send()
+	}
+
+	return
+
+requestError:
+	b.respondErr(w, http.StatusBadRequest, err)
+	return
+}
+
 /// Script handling
 
 func (b *backend) loadScriptCtx(next http.Handler) http.Handler {
@@ -197,8 +259,8 @@ func StartWeb(o util.Options) (err error) {
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/version", back.versionHandler)
 		r.Route("/image", func(r chi.Router) {
-			r.Get("/", todoHandler)
-			r.Post("/", todoHandler)
+			r.Get("/", back.imageHandler)
+			r.Post("/", back.imageHandler)
 			r.Route("/:imageID", func(r chi.Router) {
 				r.Use(back.loadImageCtx)
 				r.Get("/", todoHandler)

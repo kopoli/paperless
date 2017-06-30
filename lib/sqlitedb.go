@@ -202,8 +202,13 @@ func (db *db) getScripts(p *Page) (ret []Script, err error) {
 	return
 }
 
-func (db *db) addScript(s Script) (err error) {
+func (db *db) addScript(s Script) (ret Script, err error) {
 	_, err = db.Exec("INSERT INTO script(name, script) VALUES($1, $2)", s.Name, s.Script)
+	if err != nil {
+		return
+	}
+
+	err = db.Get(&ret, "SELECT * FROM script WHERE name = $1", s.Name)
 	return
 }
 
@@ -295,7 +300,7 @@ func syncTagsToImage(tx *sqlx.Tx, i Image) (err error) {
 	return
 }
 
-func (db *db) addImage(i Image) (err error) {
+func (db *db) addImage(i Image) (ret Image, err error) {
 	err = withTx(db, func(tx *sqlx.Tx) (err error) {
 		_, err = tx.NamedExec(`INSERT INTO
                    image(  checksum,  fileid,  scandate,  adddate,  interpretdate,  processlog,  filename)
@@ -317,6 +322,7 @@ func (db *db) addImage(i Image) (err error) {
 		}
 
 		err = syncTagsToImage(tx, i)
+		ret = i
 		return
 	})
 	return

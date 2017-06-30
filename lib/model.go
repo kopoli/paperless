@@ -1,6 +1,10 @@
 package paperless
 
-import "time"
+import (
+	"fmt"
+	"path"
+	"time"
+)
 
 type Image struct {
 	// in img
@@ -19,6 +23,10 @@ type Image struct {
 
 	// in tags
 	Tags []Tag
+}
+
+func (i Image) OrigFile(basedir string) string {
+	return path.Join(basedir, fmt.Sprintf("%05d-original-%s", i.Id, i.Fileid))
 }
 
 type Tag struct {

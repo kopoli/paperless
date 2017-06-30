@@ -100,7 +100,8 @@ func (t testFunc) run(d *db) error {
 func Test_db_Tag(t *testing.T) {
 	at := func(name, comment string) testFunc {
 		return func(d *db) error {
-			return d.addTag(Tag{Name: name, Comment: comment})
+			_, err := d.addTag(Tag{Name: name, Comment: comment})
+			return err
 		}
 	}
 
@@ -188,7 +189,8 @@ func Test_db_Tag(t *testing.T) {
 func Test_db_Script(t *testing.T) {
 	at := func(name, script string) testFunc {
 		return func(d *db) error {
-			return d.addScript(Script{Name: name, Script: script})
+			_, err := d.addScript(Script{Name: name, Script: script})
+			return err
 		}
 	}
 
@@ -276,13 +278,15 @@ func Test_db_Script(t *testing.T) {
 func Test_db_Image(t *testing.T) {
 	at := func(name, comment string) testFunc {
 		return func(d *db) error {
-			return d.addTag(Tag{Name: name, Comment: comment})
+			_, err := d.addTag(Tag{Name: name, Comment: comment})
+			return err
 		}
 	}
 
 	ai := func(i Image) testFunc {
 		return func(d *db) error {
-			return d.addImage(i)
+			_, err := d.addImage(i)
+			return err
 		}
 	}
 
