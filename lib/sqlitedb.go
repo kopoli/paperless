@@ -45,6 +45,13 @@ func openDbFile(dbfile string) (ret *db, err error) {
 		return
 	}
 
+	err = MkdirParents(dbfile)
+	if err != nil {
+		err = util.E.Annotate(err,
+			"Could not create dbfile's parent directories")
+		return
+	}
+
 	if _, err = os.Stat(dbfile); os.IsNotExist(err) {
 		create = true
 		err = nil

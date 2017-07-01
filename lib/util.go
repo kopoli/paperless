@@ -4,6 +4,8 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"path"
 	"sync"
 )
 
@@ -21,21 +23,27 @@ func ChecksumFile(path string) (sum string, err error) {
 	return Checksum(data), err
 }
 
+// MkdirParents creates all parent directories of the given path or returns an
+// error if they couldn't be created
+func MkdirParents(filename string) error {
+	dirs := path.Dir(filename)
+	return os.MkdirAll(dirs, 0755)
+}
 
 /// Parallel processing
 
 type Runner struct {
 	RunnerCount int
-	ChanBuffer int
-	Job func(string)
-	Finalize func(string)
+	ChanBuffer  int
+	Job         func(string)
+	Finalize    func(string)
 }
 
 func CreateRunner(runners int) Runner {
 	return Runner{
 		RunnerCount: runners,
-		ChanBuffer: 10,
-		Finalize: func(string){},
+		ChanBuffer:  10,
+		Finalize:    func(string) {},
 	}
 }
 
@@ -57,7 +65,7 @@ func (run Runner) Do(data []string) {
 	}
 
 	for _, item := range data {
-		input<-item
+		input <- item
 	}
 	close(input)
 	wg.Wait()
@@ -66,13 +74,13 @@ func (run Runner) Do(data []string) {
 
 type RunnerPool struct {
 	runnerCount int
-	jobChan chan Job
+	jobChan     chan Job
 	jobChanSize int
-	wait sync.WaitGroup
+	wait        sync.WaitGroup
 }
 
 type Job struct {
-	Job func()
+	Job      func()
 	Finalize func()
 }
 
@@ -80,7 +88,7 @@ func CreatePool(runners int) RunnerPool {
 	ret := RunnerPool{
 		runnerCount: runners,
 		jobChanSize: 10,
-		jobChan: make(chan Job),
+		jobChan:     make(chan Job),
 	}
 
 	ret.wait.Add(runners)

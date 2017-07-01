@@ -26,7 +26,7 @@ type Image struct {
 }
 
 func (i Image) OrigFile(basedir string) string {
-	return path.Join(basedir, fmt.Sprintf("%05d-original-%s", i.Id, i.Fileid))
+	return path.Join(basedir, fmt.Sprintf("%05d-original.%s", i.Id, i.Fileid))
 }
 
 type Tag struct {

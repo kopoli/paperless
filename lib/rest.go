@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path"
 	"strconv"
 	"time"
@@ -22,6 +23,7 @@ import (
 type backend struct {
 	options util.Options
 	db      *db
+	imgdir  string
 }
 
 /// JSON responding
@@ -174,8 +176,6 @@ func (b *backend) imageHandler(w http.ResponseWriter, r *http.Request) {
 		err = util.E.Annotate(err, arg...)
 	}
 
-	imgdir := b.options.Get("imagedir", "images")
-
 	switch r.Method {
 	case "POST":
 		err = r.ParseMultipartForm(20 * 1024 * 1024)
@@ -196,7 +196,7 @@ func (b *backend) imageHandler(w http.ResponseWriter, r *http.Request) {
 			goto requestError
 		}
 
-		img, e2 := SaveImage(header.Filename,buf.Bytes(), b.db, imgdir)
+		img, e2 := SaveImage(header.Filename, buf.Bytes(), b.db, b.imgdir)
 		if e2 != nil {
 			err = e2
 			annotate("Could not save image")
@@ -243,9 +243,15 @@ func StartWeb(o util.Options) (err error) {
 	if err != nil {
 		return
 	}
-
 	defer db.Close()
-	back := &backend{o, db}
+
+	imgdir := o.Get("image-directory", "images")
+	err = os.MkdirAll(imgdir, 0755)
+	if err != nil {
+		return
+	}
+
+	back := &backend{o, db, imgdir}
 
 	r := chi.NewRouter()
 

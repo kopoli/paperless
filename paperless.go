@@ -743,6 +743,9 @@ func main() {
 
 	// opts.Set("print-routes", "t")
 
+	opts.Set("database-file", "data/paperless.sqlite3")
+	opts.Set("image-directory", "data/images")
+
 	err := paperless.StartWeb(opts)
 	if err != nil {
 		fmt.Println("Starting paperless web server failed with:", err)
