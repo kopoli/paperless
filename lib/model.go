@@ -38,6 +38,14 @@ func (i *Image) TxtFile(basedir string) string {
 	return i.imgFile(basedir, "contents", "txt")
 }
 
+func (i *Image) CleanFile(basedir string) string {
+	return i.imgFile(basedir, "clean", "jpg")
+}
+
+func (i *Image) ThumbFile(basedir string) string {
+	return i.imgFile(basedir, "thumbnail", "jpg")
+}
+
 type Tag struct {
 	Id      int
 	Name    string

@@ -59,6 +59,11 @@ unpaper -vv -s a4 -l single -dv 3.0 -dr 80.0 --overwrite $tmpUnpaper $tmpConvert
 convert -normalize -colorspace Gray pnm:$tmpConvert pnm:$tmpTesseract
 
 tesseract -l fin -psm 1 $tmpTesseract stdout > $contents
+
+convert -trim -quality 80% +repage -type optimize pnm:$tmpConvert $cleanout
+
+convert -trim -quality 80% +repage -type optimize -thumbnail 200x200> pnm:$tmpConvert $thumbout
+
 `
 
 	ch, err := NewCmdChainScript(script)
@@ -74,6 +79,8 @@ tesseract -l fin -psm 1 $tmpTesseract stdout > $contents
 	s.Constants = map[string]string{
 		"input":    img.OrigFile(destdir),
 		"contents": img.TxtFile(destdir),
+		"cleanout": img.CleanFile(destdir),
+		"thumbout": img.ThumbFile(destdir),
 	}
 	s.AllowedCommands = map[string]bool{
 		"convert":   true,
