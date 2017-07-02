@@ -205,7 +205,7 @@ func (b *backend) imageHandler(w http.ResponseWriter, r *http.Request) {
 
 		err = ProcessImage(&img, "default", b.db, b.imgdir)
 		if err != nil {
-			annotate("Could not save image")
+			annotate("Could not process image")
 			goto requestError
 		}
 

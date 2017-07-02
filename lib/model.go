@@ -2,7 +2,7 @@ package paperless
 
 import (
 	"fmt"
-	"path"
+	"path/filepath"
 	"time"
 )
 
@@ -25,8 +25,17 @@ type Image struct {
 	Tags []Tag
 }
 
+func (i *Image) imgFile(basedir, kind, extension string) string {
+	ret, _ := filepath.Abs(filepath.Join(basedir,
+		fmt.Sprintf("%05d-%s.%s", i.Id, kind, extension)))
+	return ret
+}
 func (i *Image) OrigFile(basedir string) string {
-	return path.Join(basedir, fmt.Sprintf("%05d-original.%s", i.Id, i.Fileid))
+	return i.imgFile(basedir, "original", i.Fileid)
+}
+
+func (i *Image) TxtFile(basedir string) string {
+	return i.imgFile(basedir, "contents", "txt")
 }
 
 type Tag struct {

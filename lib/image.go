@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
@@ -50,7 +51,15 @@ func SaveImage(filename string, data []byte, db *db, destdir string) (ret Image,
 }
 
 func ProcessImage(img *Image, scriptname string, db *db, destdir string) (err error) {
-	script := "echo --version"
+	script := `
+convert -depth 8 $input pnm:$tmpUnpaper
+
+unpaper -vv -s a4 -l single -dv 3.0 -dr 80.0 --overwrite $tmpUnpaper $tmpConvert
+
+convert -normalize -colorspace Gray pnm:$tmpConvert pnm:$tmpTesseract
+
+tesseract -l fin -psm 1 $tmpTesseract stdout > $contents
+`
 
 	ch, err := NewCmdChainScript(script)
 	if err != nil {
@@ -63,18 +72,33 @@ func ProcessImage(img *Image, scriptname string, db *db, destdir string) (err er
 		Log:         buf,
 	}
 	s.Constants = map[string]string{
-		"input": img.OrigFile(destdir),
+		"input":    img.OrigFile(destdir),
+		"contents": img.TxtFile(destdir),
+	}
+	s.AllowedCommands = map[string]bool{
+		"convert":   true,
+		"unpaper":   true,
+		"tesseract": true,
+		"file":      true,
+		"cat":       true,
 	}
 
 	fmt.Fprintln(s.Log, "# Running the script named:", scriptname)
 
 	err = RunCmdChain(ch, &s)
 	if err != nil {
+		fmt.Println("Loki on:", buf.String())
 		return err
+	}
+
+	data, err := ioutil.ReadFile(img.TxtFile(destdir))
+	if err != nil {
+		data = []byte{}
 	}
 
 	img.InterpretDate = time.Now()
 	img.ProcessLog = buf.String()
+	img.Text = string(data)
 
 	err = db.updateImage(*img)
 	if err != nil {
