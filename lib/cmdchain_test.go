@@ -193,6 +193,9 @@ func TestCmd_Validate(t *testing.T) {
 		{"Empty command", fields{[]string{""}}, args{}, true},
 		// {"LastErr already set", fields{[]string{"true"}}, args{Status{LastErr: errors.New("abc")}}, true},
 		{"Command not found", fields{[]string{"command-is-not-found"}}, args{}, true},
+		{"Proper output redirection", fields{[]string{"echo", ">", "outfile"}}, args{}, false},
+		{"Redirecting syntax error", fields{[]string{"echo", ">"}}, args{}, true},
+		{"Redirecting to empty", fields{[]string{"echo", ">", ""}}, args{}, true},
 		{"Command is allowed", fields{[]string{"true"}},
 			args{Environment{
 				AllowedCommands: map[string]bool{
@@ -375,6 +378,8 @@ func TestRunCmdChain(t *testing.T) {
 		{"Empty script", "", nil, true, true, "", false},
 		{"Echo command", "echo piip", nil, true, true,
 			"Running command: echo piip\npiip\n", false},
+		{"Output redirection", "echo piip > a\ncat a", nil, true, true,
+			"Running command: echo piip > a\nRunning command: cat a\npiip\n", false},
 		{"Echo with a constant", "echo $msg", map[string]string{
 			"msg": "piip",
 		}, true, true, "Running command: echo piip\npiip\n", false},

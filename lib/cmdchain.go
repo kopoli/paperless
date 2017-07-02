@@ -214,7 +214,7 @@ func (c *Cmd) Validate(e *Environment) (err error) {
 
 	err = e.validate()
 
-	for _, a := range c.Cmd {
+	for idx, a := range c.Cmd {
 		consts := parseConsts(a)
 		if len(consts) > 0 {
 			for _, co := range consts {
@@ -222,6 +222,11 @@ func (c *Cmd) Validate(e *Environment) (err error) {
 					return util.E.New("constant \"%s\" not defined", co)
 				}
 			}
+		}
+
+		// Output redirection to a file
+		if a == ">" && (idx == len(c.Cmd)-1 || c.Cmd[idx+1] == "") {
+			return util.E.New("The output redirection requires a string")
 		}
 	}
 
@@ -243,9 +248,27 @@ func (c *Cmd) Run(s *Status) (err error) {
 		fmt.Fprintln(s.Log, "Running command:", strings.Join(args, " "))
 	}
 
+	var output io.Writer = s.Log
+
+	redirout, pos := getRedirectFile(">", args)
+	if redirout != "" {
+		var fp *os.File
+		redirout = PathAbs(s.RootDir, redirout)
+		fp, err = os.OpenFile(redirout, os.O_WRONLY | os.O_CREATE, 0666)
+		if err != nil {
+			err = util.E.Annotate(err, "Could not open file",redirout,"for redirection")
+			return
+		}
+		defer fp.Close()
+		output = fp
+
+		// Remove the redirection and the file argument from the command
+		args = append(args[:pos], args[pos+2:]...)
+	}
+
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Dir = s.RootDir
-	cmd.Stdout = s.Log
+	cmd.Stdout = output
 	cmd.Stderr = s.Log
 
 	return cmd.Run()
@@ -289,6 +312,21 @@ func expandConsts(s string, constants map[string]string) string {
 
 		return ret
 	})
+}
+
+// Gets the string after the given redir string. If not found, returns empty
+// string.
+func getRedirectFile(redir string, args []string) (file string, pos int) {
+	for i := range args {
+		if args[i] == redir {
+			if i+1 < len(args) {
+				file = args[i+1]
+				pos = i
+			}
+			return
+		}
+	}
+	return
 }
 
 // NewCmdChainScript creates a CmdChain from a script where each command is on a separate line. The following syntax elements are supported:

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 	"sync"
 )
 
@@ -26,8 +26,16 @@ func ChecksumFile(path string) (sum string, err error) {
 // MkdirParents creates all parent directories of the given path or returns an
 // error if they couldn't be created
 func MkdirParents(filename string) error {
-	dirs := path.Dir(filename)
+	dirs := filepath.Dir(filename)
 	return os.MkdirAll(dirs, 0755)
+}
+
+// Similar to filepath.Abs except the root directory is given
+func PathAbs(rootdir, path string) string {
+	if filepath.IsAbs(path) {
+		return path
+	}
+	return filepath.Join(rootdir, path)
 }
 
 /// Parallel processing
