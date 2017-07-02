@@ -25,7 +25,7 @@ type Image struct {
 	Tags []Tag
 }
 
-func (i Image) OrigFile(basedir string) string {
+func (i *Image) OrigFile(basedir string) string {
 	return path.Join(basedir, fmt.Sprintf("%05d-original.%s", i.Id, i.Fileid))
 }
 

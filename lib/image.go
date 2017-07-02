@@ -2,6 +2,7 @@ package paperless
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -45,5 +46,40 @@ func SaveImage(filename string, data []byte, db *db, destdir string) (ret Image,
 	defer fp.Close()
 
 	_, err = io.Copy(fp, file)
+	return
+}
+
+func ProcessImage(img *Image, scriptname string, db *db, destdir string) (err error) {
+	script := "echo --version"
+
+	ch, err := NewCmdChainScript(script)
+	if err != nil {
+		return err
+	}
+
+	buf := &bytes.Buffer{}
+	s := Status{
+		Environment: ch.Environment,
+		Log:         buf,
+	}
+	s.Constants = map[string]string{
+		"input": img.OrigFile(destdir),
+	}
+
+	fmt.Fprintln(s.Log, "# Running the script named:", scriptname)
+
+	err = RunCmdChain(ch, &s)
+	if err != nil {
+		return err
+	}
+
+	img.InterpretDate = time.Now()
+	img.ProcessLog = buf.String()
+
+	err = db.updateImage(*img)
+	if err != nil {
+		return err
+	}
+
 	return
 }
