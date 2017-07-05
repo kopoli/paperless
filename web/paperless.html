@@ -45,8 +45,8 @@
         <div class="media" ng-repeat="i in images">
             <div ng-hide="selected">
                 <div class="media-left">
-                    <a href="static/{{i.Fileid}}original.jpg" target="_self">
-                        <img class="img-thumbnail img-responsive" src="static/{{i.Fileid}}thumb.jpg" width="128" height="128" />
+                    <a href="{{i.CleanImg}}" target="_self">
+                        <img class="img" src="{{i.ThumbImg}}" width="128" height="128" />
                     </a>
                 </div>
                 <div class="media-body">
@@ -80,8 +80,8 @@
                             <li class="list-group-item">
                                 <button ng-click="toggleProcessed(i)"
                                         type="button" class="btn btn-default {{ifTrue(i.showLog, 'active')}}">
-                                    <i class="fa fa-bars"></i> Show processed image</button><br />
-                                <img ng-show="i.showImg" src="{{i.procURL}}" />
+                                    <i class="fa fa-bars"></i> Show original image</button><br />
+                                <img ng-show="i.showImg" src="{{i.OrigImg}}" />
                             </li>
                         </ul>
                         <pre>{{i.Text}}</pre>
