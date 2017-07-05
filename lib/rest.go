@@ -353,9 +353,8 @@ func StartWeb(o util.Options) (err error) {
 
 	// Web interface
 	webdir := o.Get("webdir", "web")
-	uploaddir := o.Get("uploaddir", "static")
 	r.FileServer("/html", http.Dir(webdir))
-	r.FileServer("/static", http.Dir(uploaddir))
+	r.FileServer("/static", http.Dir(imgdir))
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, path.Join(webdir, "paperless.html"))
 	})
