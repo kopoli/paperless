@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -24,6 +25,8 @@ type backend struct {
 	options util.Options
 	db      *db
 	imgdir  string
+
+	staticURL string
 }
 
 /// JSON responding
@@ -165,6 +168,37 @@ requestError:
 
 // Image handling
 
+type restimg struct {
+	Image
+
+	OrigImg  string
+	CleanImg string
+	ThumbImg string
+}
+
+func (b *backend) wrapImage(img *Image) (ret restimg) {
+	strip := func(s string) string {
+		return b.staticURL + "/" + filepath.Base(s)
+	}
+	ret.Image = *img
+	ret.OrigImg = strip(img.OrigFile(""))
+	ret.CleanImg = strip(img.CleanFile(""))
+	ret.ThumbImg = strip(img.ThumbFile(""))
+	return
+}
+
+func (b *backend) wrapImages(imgs []Image) (ret []restimg) {
+	ret = make([]restimg, len(imgs))
+	for i := range imgs {
+		ret[i] = b.wrapImage(&imgs[i])
+		// ret[i].Image = imgs[i]
+		// ret[i].OrigImg = b.strip(imgs[i].OrigFile(""))
+		// ret[i].CleanImg = b.strip(imgs[i].CleanFile(""))
+		// ret[i].ThumbImg = b.strip(imgs[i].ThumbFile(""))
+	}
+	return
+}
+
 func (b *backend) imageHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	annotate := func(arg ...interface{}) {
@@ -221,7 +255,7 @@ func (b *backend) imageHandler(w http.ResponseWriter, r *http.Request) {
 			goto requestError
 		}
 
-		jsend.Wrap(w).Status(http.StatusOK).Data(images).Send()
+		jsend.Wrap(w).Status(http.StatusOK).Data(b.wrapImages(images)).Send()
 	}
 
 	return
@@ -250,7 +284,7 @@ func (b *backend) singleImageHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "GET":
-		jsend.Wrap(w).Status(http.StatusOK).Data(img).Send()
+		jsend.Wrap(w).Status(http.StatusOK).Data(b.wrapImage(&img)).Send()
 	case "PUT":
 		var img2 Image
 		err = requestJson(r, &img2)
@@ -265,7 +299,7 @@ func (b *backend) singleImageHandler(w http.ResponseWriter, r *http.Request) {
 			annotate("Updating image in db failed")
 			goto requestError
 		}
-		jsend.Wrap(w).Status(http.StatusOK).Data(img).Send()
+		jsend.Wrap(w).Status(http.StatusOK).Data(b.wrapImage(&img)).Send()
 	case "DELETE":
 		err = b.db.deleteImage(img)
 		if err != nil {
@@ -307,7 +341,7 @@ func StartWeb(o util.Options) (err error) {
 		return
 	}
 
-	back := &backend{o, db, imgdir}
+	back := &backend{o, db, imgdir, "/static"}
 
 	r := chi.NewRouter()
 
@@ -354,7 +388,7 @@ func StartWeb(o util.Options) (err error) {
 	// Web interface
 	webdir := o.Get("webdir", "web")
 	r.FileServer("/html", http.Dir(webdir))
-	r.FileServer("/static", http.Dir(imgdir))
+	r.FileServer(back.staticURL, http.Dir(imgdir))
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, path.Join(webdir, "paperless.html"))
 	})
