@@ -49,11 +49,6 @@ func todoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("{ item: \"todo\" }"))
 }
 
-func (b *backend) loadImageCtx(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	})
-}
-
 func (b *backend) respondErr(w http.ResponseWriter, code int, err error) {
 	jsend.Wrap(w).Status(code).Message(err.Error()).Send()
 }
@@ -236,6 +231,57 @@ requestError:
 	return
 }
 
+func (b *backend) singleImageHandler(w http.ResponseWriter, r *http.Request) {
+	var err error
+	annotate := func(arg ...interface{}) {
+		err = util.E.Annotate(err, arg...)
+	}
+
+	var img Image
+
+	id, err := strconv.Atoi(chi.URLParam(r, "imageID"))
+	if err == nil {
+		img, err = b.db.getImage(id)
+	}
+	if err != nil {
+		annotate("Invalid image ID from URL")
+		goto requestError
+	}
+
+	switch r.Method {
+	case "GET":
+		jsend.Wrap(w).Status(http.StatusOK).Data(img).Send()
+	case "PUT":
+		var img2 Image
+		err = requestJson(r, &img2)
+		if err != nil {
+			annotate("JSON parsing failed")
+			goto requestError
+		}
+		img.Text = img2.Text
+		img.Comment = img2.Comment
+		err = b.db.updateImage(img)
+		if err != nil {
+			annotate("Updating image in db failed")
+			goto requestError
+		}
+		jsend.Wrap(w).Status(http.StatusOK).Data(img).Send()
+	case "DELETE":
+		err = b.db.deleteImage(img)
+		if err != nil {
+			annotate("Deleting image from db failed")
+			goto requestError
+		}
+		jsend.Wrap(w).Status(http.StatusOK).Message("Deleted").Send()
+	}
+
+	return
+
+requestError:
+	b.respondErr(w, http.StatusBadRequest, err)
+	return
+}
+
 /// Script handling
 
 func (b *backend) loadScriptCtx(next http.Handler) http.Handler {
@@ -278,10 +324,9 @@ func StartWeb(o util.Options) (err error) {
 			r.Get("/", back.imageHandler)
 			r.Post("/", back.imageHandler)
 			r.Route("/:imageID", func(r chi.Router) {
-				r.Use(back.loadImageCtx)
-				r.Get("/", todoHandler)
-				r.Put("/", todoHandler)
-				r.Delete("/", todoHandler)
+				r.Get("/", back.singleImageHandler)
+				r.Put("/", back.singleImageHandler)
+				r.Delete("/", back.singleImageHandler)
 			})
 		})
 
