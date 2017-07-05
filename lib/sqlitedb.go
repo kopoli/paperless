@@ -32,6 +32,7 @@ type Page struct {
 type Search struct {
 	Where   string
 	OrderBy string
+	Match   string
 }
 
 func openDbFile(dbfile string) (ret *db, err error) {
@@ -254,10 +255,18 @@ func (db *db) getImages(p *Page, s *Search) (ret []Image, err error) {
 	args := map[string]interface{}{}
 
 	if s != nil {
-		where = where + " AND imgtext.text :where"
-		args["where"] = s.Where
-		order = " ORDER by :order ASC"
-		args["order"] = s.OrderBy
+		if s.Where != "" {
+			where = where + " :where"
+			args["where"] = s.Where
+		}
+		if s.Match != "" {
+			where = where + " AND imgtext.text MATCH :match"
+			args["match"] = s.Match
+		}
+		if s.OrderBy != "" {
+			order = " ORDER BY :order ASC"
+			args["order"] = s.OrderBy
+		}
 	}
 	if p != nil {
 		where = where + " AND (image.id > :id)"

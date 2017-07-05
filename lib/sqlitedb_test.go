@@ -318,36 +318,42 @@ func Test_db_Image(t *testing.T) {
 		ops        []testOp
 		wantErr    bool
 		paging     *Page
+		search     *Search
 		wantImages []Image
 	}{
 		{"Add an image", []testOp{
 			ai(Image{Checksum: "a", Fileid: "fid"}),
-		}, false, nil, []Image{Image{Id: 1, Checksum: "a", Fileid: "fid"}}},
+		}, false, nil, nil, []Image{Image{Id: 1, Checksum: "a", Fileid: "fid"}}},
 		{"Add an images with text", []testOp{
-			ai(Image{Checksum: "a", Fileid: "fid"}), ai(Image{Checksum: "b", Text:"b"}),
-		}, false, nil, []Image{Image{Id: 1, Checksum: "a", Fileid: "fid"}, Image{Id: 2, Checksum: "b", Text:"b"}}},
+			ai(Image{Checksum: "a", Fileid: "fid"}), ai(Image{Checksum: "b", Text: "b"}),
+		}, false, nil, nil, []Image{Image{Id: 1, Checksum: "a", Fileid: "fid"}, Image{Id: 2, Checksum: "b", Text: "b"}}},
 		{"Add image and remove it", []testOp{
 			ai(Image{Checksum: "a", Text: "fid"}), ai(Image{Checksum: "b", ProcessLog: "pl"}), di("a"),
-		}, false, nil, []Image{Image{Id: 2, Checksum: "b", ProcessLog: "pl"}}},
+		}, false, nil, nil, []Image{Image{Id: 2, Checksum: "b", ProcessLog: "pl"}}},
 		{"Add image and update it", []testOp{
 			ai(Image{Checksum: "a", Text: "fid"}), ui(Image{Id: 1, Checksum: "a", Text: "other"}),
-		}, false, nil, []Image{Image{Id: 1, Checksum: "a", Text: "other"}}},
+		}, false, nil, nil, []Image{Image{Id: 1, Checksum: "a", Text: "other"}}},
 		{"Add a duplicate", []testOp{
 			ai(Image{Checksum: "a", Text: "jeje"}), ai(Image{Checksum: "a", Text: "b"}),
-		}, true, nil, []Image{Image{Id: 1, Checksum: "a", Text: "jeje"}}},
+		}, true, nil, nil, []Image{Image{Id: 1, Checksum: "a", Text: "jeje"}}},
 		{"Pagination", []testOp{
 			ai(Image{Checksum: "f1"}), ai(Image{Checksum: "f2"}),
 			ai(Image{Checksum: "f3"}), ai(Image{Checksum: "f4"}),
-		}, false, &Page{SinceId: 2, Count: 5}, []Image{Image{Id: 3, Checksum: "f3"}, Image{Id: 4, Checksum: "f4"}}},
+		}, false, &Page{SinceId: 2, Count: 5}, nil, []Image{Image{Id: 3, Checksum: "f3"}, Image{Id: 4, Checksum: "f4"}}},
 		{"Add image with tags", []testOp{
-			at("eka",""), at("toka",""),
+			at("eka", ""), at("toka", ""),
 			ai(Image{Checksum: "a", Text: "jeje", Tags: []Tag{Tag{Name: "toka"}}}),
-		}, false, nil, []Image{Image{Id: 1, Checksum: "a", Text: "jeje", Tags: []Tag{Tag{Id: 2, Name: "toka"}}}}},
+		}, false, nil, nil, []Image{Image{Id: 1, Checksum: "a", Text: "jeje", Tags: []Tag{Tag{Id: 2, Name: "toka"}}}}},
 		{"Update image with tags", []testOp{
-			at("eka",""),
+			at("eka", ""),
 			ai(Image{Checksum: "a"}),
 			ui(Image{Id: 1, Checksum: "a", Tags: []Tag{Tag{Id: 1, Name: "eka"}}}),
-		}, false, nil, []Image{Image{Id: 1, Checksum: "a", Tags: []Tag{Tag{Id: 1, Name: "eka"}}}}},
+		}, false, nil, nil, []Image{Image{Id: 1, Checksum: "a", Tags: []Tag{Tag{Id: 1, Name: "eka"}}}}},
+		{"Add images and search them", []testOp{
+			ai(Image{Checksum: "a", Text: "first"}),
+			ai(Image{Checksum: "b", Text: "second"}),
+		}, false, nil, &Search{Match: "seco*"},
+			[]Image{Image{Id: 2, Checksum: "b", Text: "second"}}},
 	}
 	for _, tt := range tests {
 		db, err := setupDb()
@@ -378,7 +384,7 @@ func Test_db_Image(t *testing.T) {
 				return
 			}
 
-			images, err := db.getImages(tt.paging, nil)
+			images, err := db.getImages(tt.paging, tt.search)
 			if err != nil {
 				t.Errorf("db.getImages() error = %v", err)
 			}
