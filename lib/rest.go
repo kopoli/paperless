@@ -212,10 +212,14 @@ func (b *backend) imageHandler(w http.ResponseWriter, r *http.Request) {
 		jsend.Wrap(w).Status(http.StatusCreated).Data(img).Send()
 	case "GET":
 		p := getPaging(r)
+		query := r.URL.Query().Get("q")
 
-		// query := r.URL.Query().Get("q")
+		var s *Search
+		if query != "" {
+			s = &Search{Match: query}
+		}
 
-		images, e2 := b.db.getImages(p, nil)
+		images, e2 := b.db.getImages(p, s)
 		if e2 != nil {
 			err = e2
 			annotate("Getting images from db failed")
