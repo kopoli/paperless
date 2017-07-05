@@ -30,7 +30,7 @@ type Page struct {
 }
 
 type Search struct {
-	Where   string
+	ID      int
 	OrderBy string
 	Match   string
 }
@@ -142,8 +142,13 @@ func (db *db) getImage(id int) (ret Image, err error) {
 		return
 	}
 
-	imgs, err := db.getImages(nil, &Search{Where: fmt.Sprintf("AND image.id = %d", id)})
+	imgs, err := db.getImages(nil, &Search{ID: id})
 	if err != nil {
+		return
+	}
+
+	if len(imgs) == 0 {
+		err = util.E.New("No image found with id %d", id)
 		return
 	}
 	if len(imgs) > 1 {
@@ -255,9 +260,9 @@ func (db *db) getImages(p *Page, s *Search) (ret []Image, err error) {
 	args := map[string]interface{}{}
 
 	if s != nil {
-		if s.Where != "" {
-			where = where + " :where"
-			args["where"] = s.Where
+		if s.ID != 0 {
+			where = where + " AND image.id = :id"
+			args["id"] = fmt.Sprintf("%d", s.ID)
 		}
 		if s.Match != "" {
 			where = where + " AND imgtext.text MATCH :match"
