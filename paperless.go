@@ -738,17 +738,30 @@ func mainStartWeb(c *cli.Context) {
 	check(err)
 }
 
+func printErr(err error, message string, arg ...string) {
+	msg := ""
+	if err != nil {
+		msg = fmt.Sprintf(" (error: %s)", err)
+	}
+	fmt.Fprintf(os.Stderr, "Error: %s%s.%s\n", message, strings.Join(arg, " "), msg)
+}
+
+func fault(err error, message string, arg ...string) {
+	printErr(err, message, arg...)
+	os.Exit(1)
+}
+
 func main() {
 	opts := util.NewOptions()
 
-	// opts.Set("print-routes", "t")
-
-	opts.Set("database-file", "data/paperless.sqlite3")
-	opts.Set("image-directory", "data/images")
-
-	err := paperless.StartWeb(opts)
+	err := paperless.Cli(opts, os.Args)
 	if err != nil {
-		fmt.Println("Starting paperless web server failed with:", err)
+		fault(err, "Command line parsing failed")
+	}
+
+	err = paperless.StartWeb(opts)
+	if err != nil {
+		fault(err, "Starting paperless web server failed")
 	}
 }
 
