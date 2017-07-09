@@ -19,19 +19,21 @@
                     <img class="img-rounded" :src="imgbase + imageInfo.ThumbImg"/>
                   </a>
                 </li>
-                <li><a href="#">Raw image</a></li>
-                <li><a href="#">Processing log</a></li>
+                <li><a target="_blank" :href="imgbase + imageInfo.OrigImg">Raw image</a></li>
+                <li><a href="#" @click="showLog = !showLog">{{showLog ? "Show Text" : "Show Processing Log"}}</a></li>
               </ul>
             </div>
           </div>
-          <div class="col-md-8">
-            <pre class="pre-scrollable">{{imageInfo.Text}}</pre>
+          <div class="col-md-8 pap-scrollable">
+            <pre class="pre-scrollable pap-text">{{showLog ? imageInfo.ProcessLog : imageInfo.Text}}</pre>
+
+            <!-- Debugging -->
             <pre class="pre-scrollable">{{imageInfo}} </pre>
           </div>
         </div>
       </div>
     </modal>
-    
+
     <!-- Search bar -->
     <form class="form-inline" @submit="doSearch">
       <div class="container pap-header">
@@ -144,18 +146,21 @@
        images: [],
        query: '',
        matches: 0,
-       imageInfo: null
+
+       // modal image information page
+       imageInfo: null,
+       showLog: false,
      }
    },
 
    created () {
-       ImageApi.get('').then(response => {
-         this.images = response.data.data;
-         this.matches = this.images.length;
-       }).catch( e => {
-         console.log(e);
-         this.errors.push(e)
-       })
+     ImageApi.get('').then(response => {
+       this.images = response.data.data;
+       this.matches = this.images.length;
+     }).catch( e => {
+       console.log(e);
+       this.errors.push(e)
+     })
    },
 
    filters: {
@@ -180,6 +185,7 @@
      },
      showInfo: function(image) {
        this.imageInfo = image
+       this.showLog = false
        this.$modal.show('image-info')
      }
    }
@@ -233,17 +239,17 @@
    padding-top: 10px;
  }
 
-.pap-info {
-  margin-top: 10px;
-}
+ .pap-info {
+   margin-top: 10px;
+ }
 
-.pap-body {
-  padding-top: 10px;
-}
+ .pap-body {
+   padding-top: 10px;
+ }
 
-.pap-item {
-  padding-top: 10px;
-  /* margin-top: 20px; */
+ .pap-item {
+   padding-top: 10px;
+   /* margin-top: 20px; */
  }
 
  button.pap-search-btn {
@@ -251,11 +257,18 @@
    color: white;
  }
 
-.pap-active {
-  background-color: #42b983;
-  color: #fff !important;
+ .pap-active {
+   background-color: #42b983;
+   color: #fff !important;
  }
 
- /* Modal handling */
+ .pap-scrollable {
+   height:450px;
+   overflow-y:scroll;
+ }
+
+ .pap-text {
+   height: 450px;
+ }
 
 </style>
