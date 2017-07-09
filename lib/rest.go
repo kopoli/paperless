@@ -327,6 +327,16 @@ func (b *backend) versionHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("{ \"version\": \"" + b.options.Get("version", "unversioned") + "\" }"))
 }
 
+func corsHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+// func(http.Handler) http.Handler
+
 func StartWeb(o util.Options) (err error) {
 
 	db, err := openDbFile(o.Get("database-file", "paperless.sqlite3"))
@@ -350,6 +360,7 @@ func StartWeb(o util.Options) (err error) {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
+	r.Use(corsHandler)
 
 	// REST API
 	r.Route("/api/v1", func(r chi.Router) {
