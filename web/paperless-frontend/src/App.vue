@@ -2,46 +2,101 @@
 
   <div id="app">
 
-    <div class="container pap-header">
-      <div class="row">
-        <div class="col-md-12">
-          <div id="custom-search-input">
-            <div class="input-group col-md-12">
-              <input type="text" class="form-control input-lg" placeholder="Search Paperless Office" />
-              <span class="input-group-btn">
-                <button class="btn btn-info btn-lg" type="button">
-                  <i class="glyphicon glyphicon-search"></i>
-                </button>
-              </span>
+    <modal name="upload"
+           :width="600"
+           :height="700">
+      upload-dialogi!!
+    </modal>
+
+    <modal v-if="imageInfo" name="image-info" :width="900" :height="700">
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-md-2">
+            <div class="navbar navbar-default navbar-collapse">
+              <ul class="nav navbar-nav">
+                <li>
+                  <a :href="imgbase + imageInfo.CleanImg">
+                    <img class="img-rounded" :src="imgbase + imageInfo.ThumbImg"/>
+                  </a>
+                </li>
+                <li><a href="#">Raw image</a></li>
+                <li><a href="#">Processing log</a></li>
+              </ul>
+            </div>
+          </div>
+          <div class="col-md-8">
+            <pre class="pre-scrollable">{{imageInfo.Text}}</pre>
+            <pre class="pre-scrollable">{{imageInfo}} </pre>
+          </div>
+        </div>
+      </div>
+    </modal>
+    
+    <!-- Search bar -->
+    <form class="form-inline" @submit="doSearch">
+      <div class="container pap-header">
+        <div class="form-group">
+          <div class="row">
+            <div class="col col-md-12">
+              <div class="input-group">
+                <input type="text" class="form-control input-lg" v-model="query"
+                       @keyup.enter="doSearch()" placeholder="Paperless | Search documents ..." />
+                <span class="input-group-btn">
+                  <button class="btn pap-search-btn btn-lg" type="button" @click="doSearch()">
+                    <i class="glyphicon glyphicon-search"></i>
+                  </button>
+                </span>
+              </div>
+            </div>
+            <div class="col col-md-2">
+              <button class="btn pap-search-btn btn-lg" type="button" @click="doUpload()">
+                +
+              </button>
             </div>
           </div>
         </div>
       </div>
+    </form>
+
+    <!-- Information bar -->
+    <div class="container pap-info panel">
+        matches: {{matches}}
+      <div class="alert alert-danger" v-for="err in errors">
+        {{err}}
+      </div>
+
     </div>
 
     <div class="container pap-body">
       <div class="list-group">
         <!-- active -->
-        <a href="#" class="list-group-item pap-item">
+        <a :href="'#' + image.Id" @click="showInfo(image)" v-for="image in images" class="list-group-item pap-item">
           <div class="media">
             <div class="media-left">
-              <img class="media-object img-rounded"  src="http://placehold.it/350x250" alt="" >
+              <img class="media-object img-rounded" :src="imgbase + image.ThumbImg"
+                   :alt="image.Filename" width="150" height="150" >
             </div>
             <div class="media-body">
-              <h4 class="media-heading"> dirps </h4>
-              qui diam libris ei, vidisse incorrupte at mel. his euismod salutandi dissentiunt eu. habeo offendit ea mea. nostro blandit sea ea, viris timeam molestiae an has. at nisl platonem eum. 
-              vel et nonumy gubergren, ad has tota facilis probatus. ea legere legimus tibique cum, sale tantas vim ea, eu vivendo expetendis vim. voluptua vituperatoribus et mel, ius no elitr deserunt mediocrem. mea facilisi torquatos ad.
+              <!-- <h4 class="media-heading"> -->
+                <span v-for="tag in image.Tags" class="badge">{{tag}}</span>
+                <!-- dirps -->
+                <!-- </h4> -->
+                <p>
+                  {{image.Text| truncate}}
+                </p>
             </div>
           </div>
         </a>
 
-        <a href="#" class="list-group-item active pap-item">
+        <a href="#" class="list-group-item pap-active pap-item">
           <div class="media">
             <div class="media-left">
               <img class="media-object img-rounded"  src="http://placehold.it/350x250" alt="" >
             </div>
             <div class="media-body">
-              <h4 class="media-heading"> dirps </h4>
+              <h4 class="media-heading">
+                <small><span class="tag is-small is-info">jep</span> jotain</small>
+              </h4>
               qui diam libris ei, vidisse incorrupte at mel. his euismod salutandi dissentiunt eu. habeo offendit ea mea. nostro blandit sea ea, viris timeam molestiae an has. at nisl platonem eum. 
               vel et nonumy gubergren, ad has tota facilis probatus. ea legere legimus tibique cum, sale tantas vim ea, eu vivendo expetendis vim. voluptua vituperatoribus et mel, ius no elitr deserunt mediocrem. mea facilisi torquatos ad.
             </div>
@@ -50,34 +105,8 @@
 
       </div>
     </div>
-    <!-- <div class="container bg-faded my-1 w-100 py-2">
-         <form class="form-inline">
-         <div class="row">
-         <div class="col-3">
-         Paperless
-         </div>
-         <div class="col-9">
-         <!-- <div class="input-group"> -->
-    <!-- <input class="form-control form-control-success" style="width:100%" type="text" placeholder="Search"> -->
-    <!-- </div> -->
-    <!-- </div> -->
-    <!-- <div class="col-3">
-         <button class="btn btn-outline-success mr-2 btn-block" type="submit">Search</button>
-         </div> -->
-    <!-- </div>
-         </form> -->
-    <!-- </div>
-       -->
-    <!-- <nav class="navbar navbar-toggleable-sm sticky-top navbar-light bg-faded">
-         <a class="navbar-brand my-1" href="/">Paperless</a>
+      {{images}}
 
-         <form class="form-inline my-2">
-         <input class="form-control mr-2 w-50" type="text" placeholder="Search">
-         <button class="btn btn-outline-success mr-2" type="submit">Search</button>
-         </form>
-
-         </nav>
-       -->
 
     <div id="example">
       <img src="./assets/logo.png" class="">
@@ -100,6 +129,7 @@
   </div>
 </template>
 
+
 <script>
 
  import {ImageApi} from './rest'
@@ -108,7 +138,49 @@
    name: 'app',
    data () {
      return {
-       msg: 'Welcome to Your Vue.js App'
+       msg: 'Welcome to Your Vue.js App',
+       imgbase: 'http://localhost:8078',
+       errors: [],
+       images: [],
+       query: '',
+       matches: 0,
+       imageInfo: null
+     }
+   },
+
+   created () {
+       ImageApi.get('').then(response => {
+         this.images = response.data.data;
+         this.matches = this.images.length;
+       }).catch( e => {
+         console.log(e);
+         this.errors.push(e)
+       })
+   },
+
+   filters: {
+     truncate: function(value) {
+       value = value.toString()
+       if (value.length > 300) {
+         return value.slice(1,300) + " [...]"
+       }
+       return value
+     }
+   },
+
+   methods: {
+
+     doSearch: function() {
+       console.log("query on")
+       console.log(this.query)
+
+     },
+     doUpload: function() {
+       this.$modal.show('upload')
+     },
+     showInfo: function(image) {
+       this.imageInfo = image
+       this.$modal.show('image-info')
      }
    }
  }
@@ -151,6 +223,7 @@
    color: #42b983;
  }
 
+ /* Paperless styles */
  a.list-group-item {
    height:auto;
    min-height:220px;
@@ -160,6 +233,10 @@
    padding-top: 10px;
  }
 
+.pap-info {
+  margin-top: 10px;
+}
+
 .pap-body {
   padding-top: 10px;
 }
@@ -168,5 +245,17 @@
   padding-top: 10px;
   /* margin-top: 20px; */
  }
+
+ button.pap-search-btn {
+   background-color: #42b983;
+   color: white;
+ }
+
+.pap-active {
+  background-color: #42b983;
+  color: #fff !important;
+ }
+
+ /* Modal handling */
 
 </style>
