@@ -111,10 +111,13 @@ CREATE TABLE IF NOT EXISTS script (
 		}
 
 	}
-	d.Exec("PRAGMA busy_timeout=10000")
+	_, err = d.Exec("PRAGMA busy_timeout=10000")
 	if err != nil {
 		goto initfail
 	}
+
+	// Work around the multiple access problems
+	d.SetMaxOpenConns(1)
 
 	ret = &db{dbfile, d}
 	return
