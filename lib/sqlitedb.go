@@ -111,7 +111,7 @@ CREATE TABLE IF NOT EXISTS script (
 		}
 
 	}
-	d.Exec("PRAGMA busy_timeout=2000")
+	d.Exec("PRAGMA busy_timeout=10000")
 	if err != nil {
 		goto initfail
 	}
