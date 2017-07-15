@@ -232,8 +232,7 @@
      }
    },
 
-   created () {
-     console.log("created-funktiossa !!")
+   mounted () {
      this.applyURL()
 
      var vm = this;
@@ -274,6 +273,8 @@
      // Switch the browser url without refreshing
      switchURL: function(path) {
        var url = new Url()
+
+       // Only remember previous url if it is the search view
        var resource = '/'
        if (url.path === '/' && url.query.toString() !== '') {
          resource += '?' + url.query
@@ -333,7 +334,7 @@
          console.log(this.imageInfo)
 
          this.showLog = false
-         if (! this.imageInfo) {
+         if (this.imageInfo !== {}) {
            if (url.query.id === null) {
              this.resetURL()
              return
