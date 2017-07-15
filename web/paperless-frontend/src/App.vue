@@ -2,10 +2,13 @@
 
   <div id="app">
 
+    <!-- Upload modal page -->
+    <!-- https://www.npmjs.com/package/vue-js-modal -->
     <modal name="upload"
+           @closed="modalClose"
            :width="600"
            :height="800">
-      <div class="container-fluid pap-scrollable">
+      <div class="container-fluid">
         <h2>Upload images</h2>
         <div class="pap-dropbox">
           <form class="form-inline" enctype="multipart/form-data">
@@ -32,7 +35,11 @@
       </div>
     </modal>
 
-    <modal v-if="imageInfo" name="image-info" :width="900" :height="700">
+    <!-- Image information page -->
+    <modal v-if="imageInfo" name="image-info"
+           @closed="modalClose"
+           :width="900"
+           :height="700">
       <div class="container-fluid">
         <div class="row">
           <div class="col-md-2">
@@ -59,7 +66,7 @@
     </modal>
 
     <!-- Search bar -->
-    <form class="form-inline" @submit="doSearch">
+    <form class="form-inline" v-on:submit.prevent>
       <div class="container pap-header">
         <div class="form-group">
           <div class="row">
@@ -86,17 +93,30 @@
 
     <!-- Information bar -->
     <div class="container pap-info panel">
+      <div class="container">
         matches: {{matches}}
-      <div class="alert alert-danger" v-for="err in errors">
-        {{err}}
+        <div class="alert alert-danger" v-for="err in errors">
+          {{err}}
+        </div>
       </div>
 
+      <!-- https://github.com/lokyoung/vuejs-paginate -->
+      <paginate
+        :page-count="20"
+        :page-range="3"
+        :margin-pages="2"
+        :click-handler="paginateHandler"
+        :prev-text="'Prev'"
+        :next-text="'Next'"
+        :container-class="'pagination'"
+        :page-class="'page-item'">
+      </paginate>
     </div>
 
     <div class="container pap-body">
       <div class="list-group">
         <!-- active -->
-        <a :href="'#' + image.Id" @click="showInfo(image)" v-for="image in images" class="list-group-item pap-item">
+        <a href="javascript:void(0)" @click.prevent.stop="showInfo(image)" v-for="image in images" class="list-group-item pap-item">
           <div class="media">
             <div class="media-left">
               <img class="media-object img-rounded" :src="imgbase + image.ThumbImg"
@@ -116,53 +136,55 @@
       </div>
     </div>
   </div>
-        <!-- <a href="#" class="list-group-item pap-active pap-item">
-             <div class="media">
-             <div class="media-left">
-             <img class="media-object img-rounded"  src="http://placehold.it/350x250" alt="" >
-             </div>
-             <div class="media-body">
-             <h4 class="media-heading">
-             <small><span class="tag is-small is-info">jep</span> jotain</small>
-             </h4>
-             qui diam libris ei, vidisse incorrupte at mel. his euismod salutandi dissentiunt eu. habeo offendit ea mea. nostro blandit sea ea, viris timeam molestiae an has. at nisl platonem eum. 
-             vel et nonumy gubergren, ad has tota facilis probatus. ea legere legimus tibique cum, sale tantas vim ea, eu vivendo expetendis vim. voluptua vituperatoribus et mel, ius no elitr deserunt mediocrem. mea facilisi torquatos ad.
-             </div>
-             </div>
-             </a>
+  <!-- <a href="#" class="list-group-item pap-active pap-item">
+       <div class="media">
+       <div class="media-left">
+       <img class="media-object img-rounded"  src="http://placehold.it/350x250" alt="" >
+       </div>
+       <div class="media-body">
+       <h4 class="media-heading">
+       <small><span class="tag is-small is-info">jep</span> jotain</small>
+       </h4>
+       qui diam libris ei, vidisse incorrupte at mel. his euismod salutandi dissentiunt eu. habeo offendit ea mea. nostro blandit sea ea, viris timeam molestiae an has. at nisl platonem eum. 
+       vel et nonumy gubergren, ad has tota facilis probatus. ea legere legimus tibique cum, sale tantas vim ea, eu vivendo expetendis vim. voluptua vituperatoribus et mel, ius no elitr deserunt mediocrem. mea facilisi torquatos ad.
+       </div>
+       </div>
+       </a>
 
-             </div>
-             </div> -->
+       </div>
+       </div> -->
 
-        <!-- {{images}}
-           -->
+  <!-- {{images}}
+     -->
 
-        <!-- <div id="example">
-             <img src="./assets/logo.png" class="">
-             <h1>{{msg}}</h1>
-             <h2>Essential Links</h2>
-             <ul>
-	     <li><a href="https://vuejs.org" target="_blank">Core Docs</a></li>
-	     <li><a href="https://forum.vuejs.org" target="_blank">Forum</a></li>
-	     <li><a href="https://gitter.im/vuejs/vue" target="_blank">Gitter Chat</a></li>
-	     <li><a href="https://twitter.com/vuejs" target="_blank">Twitter</a></li>
-             </ul>
-             <h2>Ecosystem</h2>
-             <ul>
-	     <li><a href="http://router.vuejs.org/" target="_blank">vue-router</a></li>
-	     <li><a href="http://vuex.vuejs.org/" target="_blank">vuex</a></li>
-	     <li><a href="http://vue-loader.vuejs.org/" target="_blank">vue-loader</a></li>
-	     <li><a href="https://github.com/vuejs/awesome-vue" target="_blank">awesome-vue</a></li>
-             </ul>
-      </div>
-    </div>
-           -->
+  <!-- <div id="example">
+       <img src="./assets/logo.png" class="">
+       <h1>{{msg}}</h1>
+       <h2>Essential Links</h2>
+       <ul>
+       <li><a href="https://vuejs.org" target="_blank">Core Docs</a></li>
+       <li><a href="https://forum.vuejs.org" target="_blank">Forum</a></li>
+       <li><a href="https://gitter.im/vuejs/vue" target="_blank">Gitter Chat</a></li>
+       <li><a href="https://twitter.com/vuejs" target="_blank">Twitter</a></li>
+       </ul>
+       <h2>Ecosystem</h2>
+       <ul>
+       <li><a href="http://router.vuejs.org/" target="_blank">vue-router</a></li>
+       <li><a href="http://vuex.vuejs.org/" target="_blank">vuex</a></li>
+       <li><a href="http://vue-loader.vuejs.org/" target="_blank">vue-loader</a></li>
+       <li><a href="https://github.com/vuejs/awesome-vue" target="_blank">awesome-vue</a></li>
+       </ul>
+       </div>
+       </div>
+     -->
 </template>
 
 
 <script>
 
  import {ImageApi} from './rest'
+
+ import Url from 'domurl'
 
  function getImagesOK(obj, response) {
    return function(response) {
@@ -193,10 +215,15 @@
 
        // upload page
        upload: {
+         visible: false,
          status: STATUS_INITIAL,
          uploading: false,
          images: [],
          errors: [],
+       },
+
+       info: {
+         visible: false,
        },
 
        // modal image information page
@@ -206,9 +233,16 @@
    },
 
    created () {
-     ImageApi.get('', {params: {q: this.query}})
-             .then(getImagesOK(this))
-             .catch(getImagesFail(this))
+     console.log("created-funktiossa !!")
+     this.applyURL()
+
+     var vm = this;
+
+     window.onpopstate = function(event) {
+       console.log("OnPopState funktiossa ja polku on " + window.location)
+       console.log(event)
+       vm.applyURL()
+     }
    },
 
    computed: {
@@ -237,18 +271,109 @@
    },
 
    methods: {
+     // Switch the browser url without refreshing
+     switchURL: function(path) {
+       var url = new Url()
+       var resource = '/'
+       if (url.path === '/' && url.query.toString() !== '') {
+         resource += '?' + url.query
+       }
+
+       history.pushState({paperless_path: resource}, "paperless office", path)
+       console.log("Changing to URL: " + window.location)
+       this.applyURL()
+     },
+
+     resetURL: function() {
+       this.switchURL('/')
+     },
+
+     previousURL: function() {
+       console.log("State value when going back")
+       console.log(history.state)
+       if (history.state && 'paperless_path' in history.state) {
+         this.switchURL(history.state.paperless_path)
+       } else {
+         this.resetURL()
+       }
+     },
+
+     modalClose: function() {
+       console.log("Closing a modal!");
+       this.previousURL()
+     },
+
+     // interpret URL when changing a view
+     applyURL: function() {
+       // interpret URL when changing a view
+       // - Load models from backend
+
+       var url = new Url()
+       console.log("JEJE!")
+       console.log(url)
+       console.log(this)
+       /* console.log(this)
+        */
+
+       /* Main UI with image searching */
+       if (url.path === '/') {
+         this.$modal.hide('image-info')
+         this.$modal.hide('upload')
+
+         this.query = url.query.q
+
+         ImageApi.get('', {params: {
+           q: url.query.q,
+           since: url.query.since,
+           count: url.query.count,
+         }}).then(getImagesOK(this))
+                 .catch(getImagesFail(this))
+       } else if (url.path === '/info/') {
+         console.log("Päästiin modaaliseksi!")
+         console.log(this.imageInfo)
+         this.showLog = false
+         if (! this.imageInfo) {
+           if (url.query.id === null) {
+             this.resetURL()
+             return
+           }
+           ImageApi.get('/'+ parseInt(url.query.id))
+                   .then(response => {
+                     console.log("Single image query")
+                     console.log(response)
+                     this.imageInfo = response.data.data
+                     this.$modal.show('image-info')
+                   })
+                   .catch(getImagesFail(this))
+         } else {
+           console.log("Näytetään modaalinen ikkuna!!")
+           this.$modal.show('image-info')
+         }
+       } else if (url.path === '/upload') {
+         console.log("Upload päälle")
+         console.log(this.$modal)
+         this.upload.uploading = false;
+         this.$modal.show('upload')
+       } else {
+         console.log("Unknown path. restarting to default")
+         this.resetURL()
+       }
+     },
+
      doSearch: function() {
-       console.log("query on talla")
-       console.log(this.query)
-       ImageApi.get('', {params: {q: this.query}})
-              .then(getImagesOK(this))
-              .catch(getImagesFail(this))
+       console.log("QUERYING: " + this.query)
+       this.switchURL('?q=' + encodeURIComponent(this.query))
+     },
+
+     paginateHandler: function(page) {
+       console.log(page);
+       this.applyURL()
      },
 
      doUpload: function() {
-       this.upload.uploading = false;
-       this.$modal.show('upload')
+       this.switchURL('upload')
      },
+
      startUpload: function(name, files) {
        console.log(name);
        console.log(files);
@@ -281,9 +406,15 @@
      },
 
      showInfo: function(image) {
+       /* this.imageInfo = image
+        * this.showLog = false
+        * this.$modal.show('image-info')
+        */
        this.imageInfo = image
-       this.showLog = false
-       this.$modal.show('image-info')
+
+       console.log("Showing info on image: ")
+       console.log(image)
+       this.switchURL('info/?id=' + encodeURIComponent(image.Id))
      }
    }
  }
@@ -363,6 +494,22 @@
    color: #fff !important;
  }
 
+ /* .pagination:hover {
+    color: #42b983 !important;
+    }
+
+    .page-item:hover a {
+    color: #42b983;
+    }
+
+    .page-item.active a {
+    background-color: #42b983;
+    }
+
+    .page-item.active a {
+    background-color: #42b983;
+    }
+  */
  .pap-scrollable {
    height:450px;
    overflow-y:scroll;
