@@ -7,7 +7,7 @@
     <modal name="upload"
            @closed="modalClose"
            :width="600"
-           :height="800">
+           :height="400">
       <div class="container-fluid">
         <h2>Upload images</h2>
         <div class="pap-dropbox">
@@ -36,7 +36,7 @@
     </modal>
 
     <!-- Image information page -->
-    <modal v-if="imageInfo" name="image-info"
+    <modal name="image-info"
            @closed="modalClose"
            :width="900"
            :height="700">
@@ -227,7 +227,7 @@
        },
 
        // modal image information page
-       imageInfo: null,
+       imageInfo: { },
        showLog: false,
      }
    },
@@ -331,6 +331,7 @@
        } else if (url.path === '/info/') {
          console.log("Päästiin modaaliseksi!")
          console.log(this.imageInfo)
+
          this.showLog = false
          if (! this.imageInfo) {
            if (url.query.id === null) {
@@ -347,6 +348,7 @@
                    .catch(getImagesFail(this))
          } else {
            console.log("Näytetään modaalinen ikkuna!!")
+           console.log(this.imageInfo)
            this.$modal.show('image-info')
          }
        } else if (url.path === '/upload') {
