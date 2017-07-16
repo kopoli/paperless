@@ -1,5 +1,7 @@
 package paperless
 
+//go:generate esc -o web-generated.go -pkg paperless -private -prefix ../web/paperless-frontend ../web/paperless-frontend/index.html ../web/paperless-frontend/dist/
+
 import (
 	"bytes"
 	"encoding/json"
@@ -8,7 +10,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -463,9 +464,16 @@ func StartWeb(o util.Options) (err error) {
 	webdir := o.Get("webdir", "web")
 	r.FileServer("/html", http.Dir(webdir))
 	r.FileServer(back.staticURL, http.Dir(imgdir))
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, path.Join(webdir, "paperless.html"))
-	})
+	// r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+	// 	http.ServeFile(w, r, path.Join(webdir, "paperless.html"))
+	// })
+
+	// r.FileServer("/dist", http.Dir(filepath.Join(webdir, "paperless-frontend", "dist")))
+	r.FileServer("/", _escFS(false))
+
+	// r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+	// http.ServeFile(w, r, path.Join(webdir, "paperless-frontend", "index.html"))
+	// })
 
 	if o.IsSet("print-routes") {
 		fmt.Println(docgen.JSONRoutesDoc(r))
