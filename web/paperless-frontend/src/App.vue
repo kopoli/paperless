@@ -94,7 +94,7 @@
     <!-- Information bar -->
     <div class="container pap-info panel">
       <div class="container">
-        matches: {{matches}} Results per page: {{paging.perpage}}
+        matches: {{matches}} Results per page: {{images.length}}
         <div class="alert alert-danger" v-for="err in errors">
           {{err}}
         </div>
