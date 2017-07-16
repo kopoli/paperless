@@ -51,7 +51,11 @@
                   </a>
                 </li>
                 <li><a target="_blank" :href="imgbase + imageInfo.OrigImg">Raw image</a></li>
-                <li><a href="#" @click="showLog = !showLog">{{showLog ? "Show Text" : "Show Processing Log"}}</a></li>
+                <li>
+                  <a href="javascript:void(0)" @click="showLog = !showLog">
+                    {{showLog ? "Show Text" : "Show Processing Log"}}
+                  </a>
+                </li>
               </ul>
             </div>
           </div>
@@ -333,7 +337,6 @@
                    vm.paging.pages = vm.paging.starts.length
                    vm.paging.perpage = response.data.data.Count
                    for (var i=0; i<vm.paging.starts.length; i++) {
-                     console.log(vm.paging.starts[i])
                      if (since == vm.paging.starts[i]) {
                        vm.paging.current = i
                        break
