@@ -273,6 +273,13 @@ func (b *backend) imageHandler(w http.ResponseWriter, r *http.Request) {
 			annotate("Could not find image from POST data")
 			goto requestError
 		}
+		tags := r.FormValue("tags")
+		if tags == "" {
+			err = util.E.New("Tags are required when uploading.")
+			goto requestError
+		}
+		fmt.Println("Got tags:", tags)
+
 		buf := &bytes.Buffer{}
 		_, err = io.Copy(buf, file)
 		if err != nil {
@@ -280,7 +287,7 @@ func (b *backend) imageHandler(w http.ResponseWriter, r *http.Request) {
 			goto requestError
 		}
 
-		img, e2 := SaveImage(header.Filename, buf.Bytes(), b.db, b.imgdir)
+		img, e2 := SaveImage(header.Filename, buf.Bytes(), b.db, b.imgdir, tags)
 		if e2 != nil {
 			err = e2
 			annotate("Could not save image")

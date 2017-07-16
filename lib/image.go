@@ -7,13 +7,14 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	util "github.com/kopoli/go-util"
 )
 
 // SaveImage saves the image to db and starts to process it
-func SaveImage(filename string, data []byte, db *db, destdir string) (ret Image, err error) {
+func SaveImage(filename string, data []byte, db *db, destdir string, tags string) (ret Image, err error) {
 
 	supportedTypes := map[string]string{
 		"image/gif":  "gif",
@@ -32,6 +33,18 @@ func SaveImage(filename string, data []byte, db *db, destdir string) (ret Image,
 	ret.AddDate = time.Now()
 	ret.ScanDate = time.Now() // TODO
 	ret.Filename = filename
+
+	taglist := strings.Split(tags, ",")
+	if len(taglist) > 0 {
+		ret.Tags = make([]Tag, len(taglist))
+
+		for i := range taglist {
+			ret.Tags[i].Name = strings.Trim(taglist[i], " \t\n\r")
+
+			// Add a tag, ignore errors
+			_, _ = db.addTag(ret.Tags[i])
+		}
+	}
 
 	ret, err = db.addImage(ret)
 	if err != nil {
