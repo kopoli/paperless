@@ -279,8 +279,6 @@ func (b *backend) imageHandler(w http.ResponseWriter, r *http.Request) {
 			err = util.E.New("Tags are required when uploading.")
 			goto requestError
 		}
-		fmt.Println("Got tags:", tags)
-
 		buf := &bytes.Buffer{}
 		_, err = io.Copy(buf, file)
 		if err != nil {
