@@ -105,6 +105,7 @@
         :page-count="paging.pages"
         :page-range="3"
         :margin-pages="2"
+        :force-page="paging.current"
         :click-handler="paginateHandler"
         :prev-text="'Prev'"
         :next-text="'Next'"
@@ -186,23 +187,6 @@
 
  import Url from 'domurl'
 
- function getImagesOK(obj, response) {
-   return function(response) {
-     obj.images = response.data.data.Images
-     obj.matches = response.data.data.ResultCount
-     obj.paging.starts = response.data.data.SinceIDs
-     obj.paging.pages = obj.paging.starts.length
-     obj.paging.perpage = response.data.data.Count
-   }
- }
-
- function getImagesFail(obj, e) {
-   return function(e) {
-     console.log(e);
-     obj.errors.push(e)
-   }
- }
-
  const STATUS_INITIAL = 0, STATUS_UPLOADING = 1, STATUS_SUCCESS = 2, STATUS_FAILED = 3;
 
  export default {
@@ -218,6 +202,7 @@
 
        paging: {
          starts: [],
+         current: 0,
          pages: 0,
          perpage: 0,
        },
@@ -332,12 +317,32 @@
 
          this.query = url.query.q
 
+         var since = url.query.since
+         var vm = this
          ImageApi.get('', {params: {
            q: url.query.q,
            since: url.query.since,
            count: url.query.count,
-         }}).then(getImagesOK(this))
-                 .catch(getImagesFail(this))
+         }})
+                 .then(function(response) {
+                   console.log("RESPONSE")
+                   console.log(response)
+                   vm.images = response.data.data.Images
+                   vm.matches = response.data.data.ResultCount
+                   vm.paging.starts = response.data.data.SinceIDs
+                   vm.paging.pages = vm.paging.starts.length
+                   vm.paging.perpage = response.data.data.Count
+                   for (var i=0; i<vm.paging.starts.length; i++) {
+                     console.log(vm.paging.starts[i])
+                     if (since == vm.paging.starts[i]) {
+                       vm.paging.current = i
+                       break
+                     }
+                   }
+                 })
+                 .catch(function(e) {
+                   vm.errors.push(e)
+                 })
        } else if (url.path === '/info/') {
          console.log("Päästiin modaaliseksi!")
          console.log(this.imageInfo)
