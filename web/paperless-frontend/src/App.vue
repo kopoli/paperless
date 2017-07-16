@@ -383,6 +383,19 @@
                       encodeURIComponent(this.paging.perpage))
      },
 
+     showInfo: function(image) {
+       /* this.imageInfo = image
+        * this.showLog = false
+        * this.$modal.show('image-info')
+        */
+       this.imageInfo = image
+
+       console.log("Showing info on image: ")
+       console.log(image)
+       this.switchURL('info/?id=' + encodeURIComponent(image.Id))
+     },
+
+     /* Uploading functionality*/
      doUpload: function() {
        this.switchURL('upload')
      },
@@ -416,18 +429,6 @@
               })
        }
        this.upload.status = STATUS_UPLOADING;
-     },
-
-     showInfo: function(image) {
-       /* this.imageInfo = image
-        * this.showLog = false
-        * this.$modal.show('image-info')
-        */
-       this.imageInfo = image
-
-       console.log("Showing info on image: ")
-       console.log(image)
-       this.switchURL('info/?id=' + encodeURIComponent(image.Id))
      }
    }
  }
