@@ -458,6 +458,7 @@ func StartWeb(o util.Options) (err error) {
 		})
 	})
 
+	r.FileServer(back.staticURL, http.Dir(imgdir))
 	r.FileServer("/dist", _escDir(false, "/dist/"))
 
 	r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
