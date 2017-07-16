@@ -219,10 +219,17 @@ func (b *backend) wrapImages(page *Page, imgs []Image) (ret resultimg) {
 		}
 	} else {
 		ret.Count = page.Count
-		ret.SinceIDs = make([]int, ret.ResultCount / ret.Count + 1)
 
+		pages := ret.ResultCount / ret.Count
+		if (ret.ResultCount % ret.Count) > 0 {
+			pages += 1
+		}
+		ret.SinceIDs = make([]int, pages)
+
+		// fmt.Fprintf(os.Stderr, "len ids %d count %d len images %d\n", len(ret.SinceIDs), ret.Count, len(imgs))
 		for i := range ret.SinceIDs {
-			ret.SinceIDs[i] = imgs[page.Count * i].Id
+			// fmt.Fprintf(os.Stderr, "len %d, i %d id %d\n", len(ret.SinceIDs), i, imgs[ret.Count*i].Id)
+			ret.SinceIDs[i] = imgs[ret.Count*i].Id
 		}
 
 		var start int = 0
@@ -240,7 +247,7 @@ func (b *backend) wrapImages(page *Page, imgs []Image) (ret resultimg) {
 		}
 		ret.Images = make([]restimg, realcount)
 		for i := range ret.Images {
-			ret.Images[i] = b.wrapImage(&imgs[start + i])
+			ret.Images[i] = b.wrapImage(&imgs[start+i])
 		}
 	}
 
