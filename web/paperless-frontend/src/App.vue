@@ -94,7 +94,7 @@
     <!-- Information bar -->
     <div class="container pap-info panel">
       <div class="container">
-        matches: {{matches}}
+        matches: {{matches}} Results per page: {{paging.perpage}}
         <div class="alert alert-danger" v-for="err in errors">
           {{err}}
         </div>
@@ -102,7 +102,7 @@
 
       <!-- https://github.com/lokyoung/vuejs-paginate -->
       <paginate
-        :page-count="20"
+        :page-count="paging.pages"
         :page-range="3"
         :margin-pages="2"
         :click-handler="paginateHandler"
@@ -188,8 +188,11 @@
 
  function getImagesOK(obj, response) {
    return function(response) {
-     obj.images = response.data.data;
-     obj.matches = obj.images.length;
+     obj.images = response.data.data.Images
+     obj.matches = response.data.data.ResultCount
+     obj.paging.starts = response.data.data.SinceIDs
+     obj.paging.pages = obj.paging.starts.length
+     obj.paging.perpage = response.data.data.Count
    }
  }
 
@@ -212,6 +215,12 @@
        images: [],
        query: '',
        matches: 0,
+
+       paging: {
+         starts: [],
+         pages: 0,
+         perpage: 0,
+       },
 
        // upload page
        upload: {
@@ -370,7 +379,8 @@
 
      paginateHandler: function(page) {
        console.log(page);
-       this.applyURL()
+       this.switchURL('?since=' + encodeURIComponent(this.paging.starts[page - 1]) + '&count=' +
+                      encodeURIComponent(this.paging.perpage))
      },
 
      doUpload: function() {
