@@ -460,20 +460,14 @@ func StartWeb(o util.Options) (err error) {
 		})
 	})
 
-	// Web interface
-	webdir := o.Get("webdir", "web")
-	r.FileServer("/html", http.Dir(webdir))
-	r.FileServer(back.staticURL, http.Dir(imgdir))
-	// r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-	// 	http.ServeFile(w, r, path.Join(webdir, "paperless.html"))
-	// })
+	r.FileServer("/dist", _escDir(false, "/dist/"))
 
-	// r.FileServer("/dist", http.Dir(filepath.Join(webdir, "paperless-frontend", "dist")))
-	r.FileServer("/", _escFS(false))
-
-	// r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-	// http.ServeFile(w, r, path.Join(webdir, "paperless-frontend", "index.html"))
-	// })
+	r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
+		fs := _escFS(false)
+		httpfile, _ := fs.Open("/index.html")
+		st, _ := httpfile.Stat()
+		http.ServeContent(w, r, "index.html", st.ModTime(), httpfile)
+	})
 
 	if o.IsSet("print-routes") {
 		fmt.Println(docgen.JSONRoutesDoc(r))
