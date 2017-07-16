@@ -199,7 +199,7 @@
    data () {
      return {
        msg: 'Welcome to Your Vue.js App',
-       imgbase: 'http://localhost:8078',
+       imgbase: '',
        errors: [],
        images: [],
        query: '',

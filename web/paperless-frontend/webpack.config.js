@@ -53,7 +53,17 @@ module.exports = {
   },
   devServer: {
     historyApiFallback: true,
-    noInfo: true
+    noInfo: true,
+    proxy: {
+      '/api/v1': {
+        target: 'http://localhost:8078',
+        secure: false
+      },
+      '/static/': {
+        target: 'http://localhost:8078',
+        secure: false
+      }
+    }
   },
   performance: {
     hints: false
