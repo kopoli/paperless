@@ -296,6 +296,10 @@ func (b *backend) imageHandler(w http.ResponseWriter, r *http.Request) {
 		err = ProcessImage(&img, "default", b.db, b.imgdir)
 		if err != nil {
 			annotate("Could not process image")
+			e2 = b.db.deleteImage(img)
+			if e2 != nil {
+				err = util.E.Annotate(err, "Deleting image failed:", e2)
+			}
 			goto requestError
 		}
 
