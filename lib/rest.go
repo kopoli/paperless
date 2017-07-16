@@ -423,7 +423,7 @@ func StartWeb(o util.Options) (err error) {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.Timeout(60 * time.Second))
+	r.Use(middleware.Timeout(600 * time.Second))
 	r.Use(corsHandler)
 
 	// REST API
