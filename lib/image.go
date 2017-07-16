@@ -65,9 +65,9 @@ func SaveImage(filename string, data []byte, db *db, destdir string, tags string
 
 func ProcessImage(img *Image, scriptname string, db *db, destdir string) (err error) {
 	script := `
-convert -depth 8 $input png:$tmpUnpaper
+convert -depth 8 $input pnm:$tmpUnpaper.pnm
 
-unpaper -vv -s a4 -l single -dv 3.0 -dr 80.0 --overwrite $tmpUnpaper $tmpConvert
+unpaper -vv -s a4 -l single -dv 3.0 -dr 80.0 --overwrite $tmpUnpaper.pnm $tmpConvert
 
 convert -normalize -colorspace Gray pnm:$tmpConvert pnm:$tmpTesseract
 
