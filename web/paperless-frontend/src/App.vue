@@ -7,9 +7,10 @@
     <modal name="upload"
            @closed="modalClose"
            :width="600"
-           :height="400">
-      <div class="container-fluid">
+           :height="800">
+      <div class="container-fluid pap-scrollable">
         <h2>Upload images</h2>
+        <input type="text" class="form-control" name="tags" v-model="upload.tags" />
         <div class="pap-dropbox">
           <form class="form-inline" enctype="multipart/form-data">
             <input type="file" name="image" multiple :disabled="isUploading" accept="image/*"
@@ -129,7 +130,7 @@
             </div>
             <div class="media-body">
               <!-- <h4 class="media-heading"> -->
-                <span v-for="tag in image.Tags" class="badge">{{tag}}</span>
+                <span v-for="tag in image.Tags" class="badge">{{tag.Name}}</span>
                 <!-- dirps -->
                 <!-- </h4> -->
                 <p>
@@ -218,6 +219,7 @@
          uploading: false,
          images: [],
          errors: [],
+         tags: "",
        },
 
        info: {
@@ -363,7 +365,9 @@
                      this.imageInfo = response.data.data
                      this.$modal.show('image-info')
                    })
-                   .catch(getImagesFail(this))
+                   .catch(e => {
+                     this.errors.push(e)
+                   })
          } else {
            console.log("Näytetään modaalinen ikkuna!!")
            console.log(this.imageInfo)
@@ -416,10 +420,10 @@
          return
        }
 
-
        for (var i = 0; i< files.length; i++) {
          const fdata = new FormData();
          fdata.append(name, files[i], files[i].name)
+         fdata.append('tags', this.upload.tags)
          ImageApi.post('', fdata, {
            filename: files[i].name
          })
