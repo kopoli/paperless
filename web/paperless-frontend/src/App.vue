@@ -87,7 +87,7 @@
         <div class="row">
           <div class="col col-xs-11">
             <div class="input-group pap-search-input">
-              <input type="text" class="form-control input-lg" v-model="query"
+              <input type="text" class="form-control input-lg" v-model="query" autofocus
                      @keyup.enter="doSearch()" placeholder="Paperless | Search documents ..." />
               <span class="input-group-btn" style="width: 1px">
                 <button class="btn pap-search-btn btn-lg" type="button" @click="doSearch()">
