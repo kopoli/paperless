@@ -2,19 +2,16 @@
 
   Reads the texts of images and makes them browsable and searchable via HTTP.
 
-  This includes a web server written in Golang that serves an interface in
-  AngularJS. The same binary can be used to upload images into the server.
+** Requirements
 
-** requirements
-
-   On an ubuntu system run the following to install prerequisites for the OCR
+   On an Ubuntu system run the following to install prerequisites for the OCR
    and processing:
 
    #+begin_src shell
    sudo apt-get install sqlite3 tesseract-ocr-osd tesseract-ocr-fin tesseract-ocr imagemagick unpaper
    #+end_src
 
-   Also Golang is required. Should work with v1.4.2 and v1.5.
+   Also Golang is required. Tested with go 1.8.
 
 ** Building the application
 
@@ -29,18 +26,28 @@
    Start the web server with the following:
 
    #+begin_src shell
-   ./paperless start-web
+   ./paperless
    #+end_src
 
-   Upload images:
+   This starts a web-server to the port 8078. See the '--help' argument for
+   command line options
+
+   File uploading happens with a browser. There is the '+' button which opens
+   a panel where one can drag-and-drop images to OCR.
+
+** Running this inside Docker
+
+   If you have Docker properly set up, you can run this inside docker with the
+   following:
 
    #+begin_src shell
-   ./paperless add --tags tagname files [...]
+   cd docker
+   ./run.sh
    #+end_src
 
-   At least one tag is required to upload files.
-
+   This should start an Ubuntu 16.04 Docker instance where the program is
+   running.
 
 ** License
 
-   GPLv3+
+   MIT license
