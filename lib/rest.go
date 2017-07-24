@@ -64,7 +64,7 @@ func getPaging(r *http.Request) (ret *Page) {
 	}
 	count, err := strconv.Atoi(r.URL.Query().Get("count"))
 	if err != nil {
-		count = 50
+		count = 20
 	}
 
 	if count > 0 {
