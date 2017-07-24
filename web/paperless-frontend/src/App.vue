@@ -75,6 +75,7 @@
             </div>
           </div>
           <div class="col-md-10">
+            <span v-for="tag in info.image.Tags" class="badge">{{tag.Name}}</span>
             <pre class="pre-scrollable pap-text">{{info.showLog ? info.image.ProcessLog : info.image.Text}}</pre>
 
             <!-- Debugging -->
