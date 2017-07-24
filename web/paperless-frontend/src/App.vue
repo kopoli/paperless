@@ -46,16 +46,18 @@
     <!-- Image information page -->
     <modal name="image-info"
            @closed="modalClose"
-           :width="900"
-           :height="700">
-      <div class="container-fluid">
+           :min-width="300"
+           :min-height="600"
+           width="80%"
+           height="90%">
+      <div class="container">
         <div class="row">
           <div class="col-md-2">
-            <div class="navbar navbar-default navbar-collapse">
+            <div class="navbar navbar-default navbar-collapse" style="margin-top: 10px">
               <ul class="nav navbar-nav">
                 <li>
                   <a target="_blank" :href="imgbase + imageInfo.CleanImg">
-                    <img class="img-rounded" :src="imgbase + imageInfo.ThumbImg"/>
+                    <img class="img-rounded" :src="imgbase + imageInfo.ThumbImg" width="100px" />
                   </a>
                 </li>
                 <li><a target="_blank" :href="imgbase + imageInfo.OrigImg">Raw image</a></li>
@@ -67,11 +69,11 @@
               </ul>
             </div>
           </div>
-          <div class="col-md-8 pap-scrollable">
+          <div class="col-md-10">
             <pre class="pre-scrollable pap-text">{{showLog ? imageInfo.ProcessLog : imageInfo.Text}}</pre>
 
             <!-- Debugging -->
-            <pre class="pre-scrollable">{{imageInfo}} </pre>
+            <!-- <pre class="pre-scrollable">{{imageInfo}} </pre> -->
           </div>
         </div>
       </div>
@@ -362,10 +364,6 @@
      },
 
      showInfo: function(image) {
-       /* this.imageInfo = image
-        * this.showLog = false
-        * this.$modal.show('image-info')
-        */
        this.imageInfo = image
 
        console.log("Showing info on image: ")
@@ -492,7 +490,8 @@
  }
 
  .pap-text {
-   height: 450px;
+   max-height: 500px;
+   margin-top: 10px;
  }
 
  /* file upload styles */
