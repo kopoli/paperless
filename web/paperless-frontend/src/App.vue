@@ -66,6 +66,9 @@
                     {{info.showLog ? "Show Text" : "Show Processing Log"}}
                   </a>
                 </li>
+                <li>
+                  <a href="javascript:void(0)" @click="deleteImage()">
+                    {{info.confirmDelete ? "Confirm delete image?" : "Delete image"}}
                   </a>
                 </li>
               </ul>
@@ -217,6 +220,7 @@
        info: {
          image: {},
          showLog: false,
+         confirmDelete: false,
        },
      }
    },
@@ -342,6 +346,7 @@
          console.log(this.info.image)
 
          this.info.showLog = false
+         this.info.confirmDelete = false;
          if (this.info.image !== {}) {
            if (url.query.id === null) {
              this.resetURL()
@@ -422,6 +427,21 @@
               })
        }
        this.upload.status = STATUS_UPLOADING;
+     },
+
+     // user clicks the delete-button for an image in the info-page
+     deleteImage: function() {
+       if (this.info.confirmDelete) {
+         ImageApi.delete('/'+ parseInt(this.info.image.Id))
+                 .then(response => {
+                   this.info.image = {}
+                 })
+                 .catch(e => {
+                   this.errors.push(e)
+                 })
+         this.$modal.hide('image-info')
+       }
+       this.info.confirmDelete = !this.info.confirmDelete;
      }
    }
  }
