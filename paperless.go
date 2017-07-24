@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	util "github.com/kopoli/go-util"
-	"github.com/kopoliitti/paperless/lib"
+	"github.com/kopoli/paperless/lib"
 )
 
 func printErr(err error, message string, arg ...string) {
