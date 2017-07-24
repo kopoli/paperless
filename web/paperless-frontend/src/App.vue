@@ -152,6 +152,23 @@
         </a>
       </div>
     </div>
+
+    <!-- https://github.com/lokyoung/vuejs-paginate -->
+    <div class="container panel">
+      <div class="text-center">
+        <paginate
+          :page-count="paging.pages"
+          :page-range="3"
+          :margin-pages="2"
+          :force-page="paging.current"
+          :click-handler="paginateHandler"
+          :prev-text="'Prev'"
+          :next-text="'Next'"
+          :container-class="'pagination'"
+          :page-class="'page-item'">
+        </paginate>
+      </div>
+    </div>
   </div>
 </template>
 
