@@ -436,12 +436,15 @@
 
  .pap-item {
    padding-top: 10px;
-   /* margin-top: 20px; */
  }
 
  button.pap-search-btn {
    background-color: #42b983;
    color: white;
+ }
+
+ button.pap-search-btn:hover {
+   color: #0d8e53;
  }
 
  .pap-active {
@@ -452,29 +455,33 @@
  .pagination {
    margin-top: 5px;
    margin-bottom: 5px;
-   /* width: 600px; */
+ }
+
+ .pagination li a {
+   color: #42b983;
+ }
+
+ .pagination li a:hover {
+   color: #0d8e53;
+ }
+
+ .pagination li a:focus {
+   color: #0d8e53;
  }
 
  .page-item {
-   /* margin: 0 0px */
  }
 
- /* .pagination:hover {
-    color: #42b983 !important;
-    }
+ .page-item.active a {
+   background-color: #42b983;
+   border-color: #42b983;
+ }
 
-    .page-item:hover a {
-    color: #42b983;
-    }
+ .pagination > .active > a:hover {
+   background-color: #0d8e53;
+   border-color: #0d8e53;
+ }
 
-    .page-item.active a {
-    background-color: #42b983;
-    }
-
-    .page-item.active a {
-    background-color: #42b983;
-    }
-  */
  .pap-scrollable {
    height:450px;
    overflow-y:scroll;
