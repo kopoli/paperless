@@ -93,30 +93,34 @@
 
     <!-- Information bar -->
     <div class="container pap-info panel">
-      <div class="container">
+      <div class="text-center">
         matches: {{matches}} Results per page: {{images.length}}
         <div class="alert alert-danger" v-for="err in errors">
           {{err}}
         </div>
       </div>
-
-      <!-- https://github.com/lokyoung/vuejs-paginate -->
-      <paginate
-        :page-count="paging.pages"
-        :page-range="3"
-        :margin-pages="2"
-        :force-page="paging.current"
-        :click-handler="paginateHandler"
-        :prev-text="'Prev'"
-        :next-text="'Next'"
-        :container-class="'pagination'"
-        :page-class="'page-item'">
-      </paginate>
     </div>
 
+    <!-- https://github.com/lokyoung/vuejs-paginate -->
+    <div class="container panel">
+      <div class="text-center">
+        <paginate
+          :page-count="paging.pages"
+          :page-range="3"
+          :margin-pages="2"
+          :force-page="paging.current"
+          :click-handler="paginateHandler"
+          :prev-text="'Prev'"
+          :next-text="'Next'"
+          :container-class="'pagination'"
+          :page-class="'page-item'">
+        </paginate>
+      </div>
+    </div>
+
+    <!-- Search results -->
     <div class="container pap-body">
       <div class="list-group">
-        <!-- active -->
         <a href="javascript:void(0)" @click.prevent.stop="showInfo(image)" v-for="image in images" class="list-group-item pap-item">
           <div class="media">
             <div class="media-left">
@@ -137,47 +141,6 @@
       </div>
     </div>
   </div>
-  <!-- <a href="#" class="list-group-item pap-active pap-item">
-       <div class="media">
-       <div class="media-left">
-       <img class="media-object img-rounded"  src="http://placehold.it/350x250" alt="" >
-       </div>
-       <div class="media-body">
-       <h4 class="media-heading">
-       <small><span class="tag is-small is-info">jep</span> jotain</small>
-       </h4>
-       qui diam libris ei, vidisse incorrupte at mel. his euismod salutandi dissentiunt eu. habeo offendit ea mea. nostro blandit sea ea, viris timeam molestiae an has. at nisl platonem eum. 
-       vel et nonumy gubergren, ad has tota facilis probatus. ea legere legimus tibique cum, sale tantas vim ea, eu vivendo expetendis vim. voluptua vituperatoribus et mel, ius no elitr deserunt mediocrem. mea facilisi torquatos ad.
-       </div>
-       </div>
-       </a>
-
-       </div>
-       </div> -->
-
-  <!-- {{images}}
-     -->
-
-  <!-- <div id="example">
-       <img src="./assets/logo.png" class="">
-       <h1>{{msg}}</h1>
-       <h2>Essential Links</h2>
-       <ul>
-       <li><a href="https://vuejs.org" target="_blank">Core Docs</a></li>
-       <li><a href="https://forum.vuejs.org" target="_blank">Forum</a></li>
-       <li><a href="https://gitter.im/vuejs/vue" target="_blank">Gitter Chat</a></li>
-       <li><a href="https://twitter.com/vuejs" target="_blank">Twitter</a></li>
-       </ul>
-       <h2>Ecosystem</h2>
-       <ul>
-       <li><a href="http://router.vuejs.org/" target="_blank">vue-router</a></li>
-       <li><a href="http://vuex.vuejs.org/" target="_blank">vuex</a></li>
-       <li><a href="http://vue-loader.vuejs.org/" target="_blank">vue-loader</a></li>
-       <li><a href="https://github.com/vuejs/awesome-vue" target="_blank">awesome-vue</a></li>
-       </ul>
-       </div>
-       </div>
-     -->
 </template>
 
 
@@ -445,39 +408,6 @@
 
  <style>
 
- #app {
-   margin-top: 20px;
-   margin-left: 10px;
-   margin-right: 10px;
- }
-
- #example {
-   font-family: 'Avenir', Helvetica, Arial, sans-serif;
-   -webkit-font-smoothing: antialiased;
-   -moz-osx-font-smoothing: grayscale;
-   text-align: center;
-   color: #2c3e50;
-   margin-top: 30px;
- }
-
- h1, h2 {
-   font-weight: normal;
- }
-
- ul {
-   list-style-type: none;
-   padding: 0;
- }
-
- li {
-   display: inline-block;
-   margin: 0 10px;
- }
-
- a {
-   color: #42b983;
- }
-
  /* Paperless styles */
  a.list-group-item {
    height:auto;
@@ -488,16 +418,20 @@
    padding-top: 10px;
  }
 
+ .pap-header {
+   margin-top: 10px
+ }
+
  .pap-search-input {
    width: 100% !important;
  }
 
  .pap-info {
    margin-top: 10px;
+   margin-bottom: 0px;
  }
 
  .pap-body {
-   padding-top: 10px;
  }
 
  .pap-item {
@@ -513,6 +447,16 @@
  .pap-active {
    background-color: #42b983;
    color: #fff !important;
+ }
+
+ .pagination {
+   margin-top: 5px;
+   margin-bottom: 5px;
+   /* width: 600px; */
+ }
+
+ .page-item {
+   /* margin: 0 0px */
  }
 
  /* .pagination:hover {
