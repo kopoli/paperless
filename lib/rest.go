@@ -296,10 +296,9 @@ func (b *backend) imageHandler(w http.ResponseWriter, r *http.Request) {
 		err = ProcessImage(&img, "default", b.db, b.imgdir)
 		if err != nil {
 			annotate("Could not process image")
-			e2 = b.db.deleteImage(img)
-			if e2 != nil {
-				err = util.E.Annotate(err, "Deleting image failed:", e2)
-			}
+			// Ignore errors with this as the data could be
+			// incomplete before deletion
+			_ = DeleteImage(&img, b.db, b.imgdir)
 			goto requestError
 		}
 
@@ -367,9 +366,9 @@ func (b *backend) singleImageHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		jsend.Wrap(w).Status(http.StatusOK).Data(b.wrapImage(&img)).Send()
 	case "DELETE":
-		err = b.db.deleteImage(img)
+		err = DeleteImage(&img, b.db, b.imgdir)
 		if err != nil {
-			annotate("Deleting image from db failed")
+			annotate("Deleting image failed")
 			goto requestError
 		}
 		jsend.Wrap(w).Status(http.StatusOK).Message("Deleted").Send()

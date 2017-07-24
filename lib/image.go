@@ -127,3 +127,34 @@ convert -trim -quality 80% +repage -type optimize -thumbnail 200x200> pnm:$tmpCo
 
 	return
 }
+
+// DeleteImage deletes the image's files and data from the database
+func DeleteImage(img *Image, db *db, destdir string) error {
+	var err error
+	ret := util.NewErrorList("Deleting image data failed")
+
+	err = db.deleteImage(*img)
+	if err != nil {
+		ret.Append(err)
+	}
+
+	files := []string{
+		img.OrigFile(destdir),
+		img.TxtFile(destdir),
+		img.CleanFile(destdir),
+		img.ThumbFile(destdir),
+	}
+
+	for i := range files {
+		err = os.Remove(files[i])
+		if err != nil {
+			ret.Append(util.E.Annotate(err, "Removing file ", files[i], "failed"))
+		}
+	}
+
+	if ret.IsEmpty() {
+		return nil
+	}
+
+	return ret
+}
