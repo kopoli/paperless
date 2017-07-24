@@ -65,6 +65,10 @@ func SaveImage(filename string, data []byte, db *db, destdir string, tags string
 
 func ProcessImage(img *Image, scriptname string, db *db, destdir string) (err error) {
 	script := `
+unpaper --version
+convert -version
+tesseract --version
+
 convert -depth 8 $input pnm:$tmpUnpaper.pnm
 
 unpaper -vv -s a4 -l single -dv 3.0 -dr 80.0 --overwrite $tmpUnpaper.pnm $tmpConvert
@@ -81,7 +85,7 @@ convert -trim -quality 80% +repage -type optimize -thumbnail 200x200> pnm:$tmpCo
 
 	ch, err := NewCmdChainScript(script)
 	if err != nil {
-		return err
+		return
 	}
 
 	buf := &bytes.Buffer{}
@@ -107,11 +111,11 @@ convert -trim -quality 80% +repage -type optimize -thumbnail 200x200> pnm:$tmpCo
 
 	err = RunCmdChain(ch, &s)
 	if err != nil {
-		fmt.Println("Loki on:", buf.String())
-		return err
+		return
 	}
 
 	data, err := ioutil.ReadFile(img.TxtFile(destdir))
+	// Ignore the error if the text-file was not generated
 	if err != nil {
 		data = []byte{}
 	}
@@ -121,10 +125,6 @@ convert -trim -quality 80% +repage -type optimize -thumbnail 200x200> pnm:$tmpCo
 	img.Text = string(data)
 
 	err = db.updateImage(*img)
-	if err != nil {
-		return err
-	}
-
 	return
 }
 
