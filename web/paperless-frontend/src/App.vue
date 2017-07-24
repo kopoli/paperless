@@ -32,7 +32,6 @@
             {{image}}
           </li>
         </ul>
-        <!-- {{upload.images}} -->
       </div>
     </modal>
 
@@ -71,30 +70,26 @@
     </modal>
 
     <!-- Search bar -->
-    <form class="form-inline" v-on:submit.prevent>
-      <div class="container pap-header">
-        <div class="form-group">
-          <div class="row">
-            <div class="col col-md-12">
-              <div class="input-group">
-                <input type="text" class="form-control input-lg pap-search-input" v-model="query"
-                       @keyup.enter="doSearch()" placeholder="Paperless | Search documents ..." />
-                <span class="input-group-btn">
-                  <button class="btn pap-search-btn btn-lg" type="button" @click="doSearch()">
-                    <i class="glyphicon glyphicon-search"></i>
-                  </button>
-                </span>
-              </div>
-            </div>
-            <div class="col col-md-2">
-              <button class="btn pap-search-btn btn-lg" type="button" @click="doUpload()">
-                +
-              </button>
+    <div class="container pap-header">
+      <form class="form-inline" v-on:submit.prevent>
+        <div class="row">
+          <div class="col col-xs-11">
+            <div class="input-group pap-search-input">
+              <input type="text" class="form-control input-lg" v-model="query"
+                     @keyup.enter="doSearch()" placeholder="Paperless | Search documents ..." />
+              <span class="input-group-btn" style="width: 1px">
+                <button class="btn pap-search-btn btn-lg" type="button" @click="doSearch()">
+                  <i class="glyphicon glyphicon-search"></i>
+                </button>
+              </span>
             </div>
           </div>
+            <button class="btn pap-search-btn btn-lg" type="button" @click="doUpload()">
+              +
+            </button>
         </div>
-      </div>
-    </form>
+      </form>
+    </div>
 
     <!-- Information bar -->
     <div class="container pap-info panel">
