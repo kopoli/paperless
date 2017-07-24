@@ -245,7 +245,7 @@ func (c *Cmd) Run(s *Status) (err error) {
 	}
 
 	if s.Log != nil {
-		fmt.Fprintln(s.Log, "Running command:", strings.Join(args, " "))
+		fmt.Fprintln(s.Log, "# Running command:", strings.Join(args, " "))
 	}
 
 	var output io.Writer = s.Log
