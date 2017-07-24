@@ -12,12 +12,13 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gamegos/jsend"
-	"github.com/pressly/chi"
-	"github.com/pressly/chi/docgen"
-	"github.com/pressly/chi/middleware"
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/docgen"
 
 	"github.com/kopoli/go-util"
 )
@@ -400,7 +401,27 @@ func corsHandler(next http.Handler) http.Handler {
 	})
 }
 
-// func(http.Handler) http.Handler
+// FileServer conveniently sets up a http.FileServer handler to serve static
+// files from a http.FileSystem.  As chi updated to 3.x, the equivalent
+// function was removed. This one is copied from the example in:
+// https://github.com/go-chi/chi/blob/master/_examples/fileserver/main.go
+func FileServer(r chi.Router, path string, root http.FileSystem) {
+	if strings.ContainsAny(path, "{}*") {
+		panic("FileServer does not permit URL parameters.")
+	}
+
+	fs := http.StripPrefix(path, http.FileServer(root))
+
+	if path != "/" && path[len(path)-1] != '/' {
+		r.Get(path, http.RedirectHandler(path+"/", 301).ServeHTTP)
+		path += "/"
+	}
+	path += "*"
+
+	r.Get(path, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fs.ServeHTTP(w, r)
+	}))
+}
 
 func StartWeb(o util.Options) (err error) {
 
@@ -433,7 +454,7 @@ func StartWeb(o util.Options) (err error) {
 		r.Route("/image", func(r chi.Router) {
 			r.Get("/", back.imageHandler)
 			r.Post("/", back.imageHandler)
-			r.Route("/:imageID", func(r chi.Router) {
+			r.Route("/{imageID}", func(r chi.Router) {
 				r.Get("/", back.singleImageHandler)
 				r.Put("/", back.singleImageHandler)
 				r.Delete("/", back.singleImageHandler)
@@ -443,7 +464,7 @@ func StartWeb(o util.Options) (err error) {
 		r.Route("/tag", func(r chi.Router) {
 			r.Get("/", back.tagHandler)
 			r.Post("/", back.tagHandler)
-			r.Route("/:tagID", func(r chi.Router) {
+			r.Route("/{tagID}", func(r chi.Router) {
 				r.Get("/", back.singleTagHandler)
 				r.Put("/", back.singleTagHandler)
 				r.Delete("/", back.singleTagHandler)
@@ -452,7 +473,7 @@ func StartWeb(o util.Options) (err error) {
 		r.Route("/script", func(r chi.Router) {
 			r.Get("/", todoHandler)
 			r.Post("/", todoHandler)
-			r.Route("/:scriptID", func(r chi.Router) {
+			r.Route("/{scriptID}", func(r chi.Router) {
 				r.Use(back.loadScriptCtx)
 				r.Get("/", todoHandler)
 				r.Put("/", todoHandler)
@@ -461,8 +482,8 @@ func StartWeb(o util.Options) (err error) {
 		})
 	})
 
-	r.FileServer(back.staticURL, http.Dir(imgdir))
-	r.FileServer("/dist", _escDir(false, "/dist/"))
+	FileServer(r, back.staticURL, http.Dir(imgdir))
+	FileServer(r, "/dist", _escDir(false, "/dist/"))
 
 	r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
 		fs := _escFS(false)
