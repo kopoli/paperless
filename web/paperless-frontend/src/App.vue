@@ -56,24 +56,26 @@
             <div class="navbar navbar-default navbar-collapse" style="margin-top: 10px">
               <ul class="nav navbar-nav">
                 <li>
-                  <a target="_blank" :href="imgbase + imageInfo.CleanImg">
-                    <img class="img-rounded" :src="imgbase + imageInfo.ThumbImg" width="100px" />
+                  <a target="_blank" :href="imgbase + info.image.CleanImg">
+                    <img class="img-rounded" :src="imgbase + info.image.ThumbImg" width="100px" />
                   </a>
                 </li>
-                <li><a target="_blank" :href="imgbase + imageInfo.OrigImg">Raw image</a></li>
+                <li><a target="_blank" :href="imgbase + info.image.OrigImg">Raw image</a></li>
                 <li>
-                  <a href="javascript:void(0)" @click="showLog = !showLog">
-                    {{showLog ? "Show Text" : "Show Processing Log"}}
+                  <a href="javascript:void(0)" @click="info.showLog = !info.showLog">
+                    {{info.showLog ? "Show Text" : "Show Processing Log"}}
+                  </a>
+                </li>
                   </a>
                 </li>
               </ul>
             </div>
           </div>
           <div class="col-md-10">
-            <pre class="pre-scrollable pap-text">{{showLog ? imageInfo.ProcessLog : imageInfo.Text}}</pre>
+            <pre class="pre-scrollable pap-text">{{info.showLog ? info.image.ProcessLog : info.image.Text}}</pre>
 
             <!-- Debugging -->
-            <!-- <pre class="pre-scrollable">{{imageInfo}} </pre> -->
+            <!-- <pre class="pre-scrollable">{{info.image}} </pre> -->
           </div>
         </div>
       </div>
@@ -195,8 +197,10 @@
        },
 
        // modal image information page
-       imageInfo: { },
-       showLog: false,
+       info: {
+         image: {},
+         showLog: false,
+       },
      }
    },
 
@@ -318,10 +322,10 @@
                  })
        } else if (url.path === '/info/') {
          console.log("Päästiin modaaliseksi!")
-         console.log(this.imageInfo)
+         console.log(this.info.image)
 
-         this.showLog = false
-         if (this.imageInfo !== {}) {
+         this.info.showLog = false
+         if (this.info.image !== {}) {
            if (url.query.id === null) {
              this.resetURL()
              return
@@ -330,7 +334,7 @@
                    .then(response => {
                      console.log("Single image query")
                      console.log(response)
-                     this.imageInfo = response.data.data
+                     this.info.image = response.data.data
                      this.$modal.show('image-info')
                    })
                    .catch(e => {
@@ -338,7 +342,7 @@
                    })
          } else {
            console.log("Näytetään modaalinen ikkuna!!")
-           console.log(this.imageInfo)
+           console.log(this.info.image)
            this.$modal.show('image-info')
          }
        } else if (url.path === '/upload') {
@@ -364,7 +368,7 @@
      },
 
      showInfo: function(image) {
-       this.imageInfo = image
+       this.info.image = image
 
        console.log("Showing info on image: ")
        console.log(image)
