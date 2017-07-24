@@ -6,11 +6,19 @@
     <!-- https://www.npmjs.com/package/vue-js-modal -->
     <modal name="upload"
            @closed="modalClose"
-           :width="600"
-           :height="800">
+           :adaptive="true"
+           :min-width="300"
+           :min-height="600"
+           width="80%"
+           height="90%">
       <div class="container-fluid pap-scrollable">
         <h2>Upload images</h2>
-        <input type="text" class="form-control" name="tags" v-model="upload.tags" />
+        <div class="form-inline">
+          <div class="form-group">
+            <label for="tags">Tags for the images</label>
+            <input type="text" class="form-control" name="tags" v-model="upload.tags" />
+          </div>
+        </div>
         <div class="pap-dropbox">
           <form class="form-inline" enctype="multipart/form-data">
             <input type="file" name="image" multiple :disabled="isUploading" accept="image/*"
@@ -27,7 +35,7 @@
         <div class="alert alert-danger" v-for="err in upload.errors">
           {{err}}
         </div>
-        <ul>
+        <ul style="margin-top: 10px">
           <li v-for="image in upload.images">
             {{image}}
           </li>
@@ -386,15 +394,11 @@
            filename: files[i].name
          })
               .then(response => {
-                /* this.upload.images.push(response)
-                 * this.upload.images.push(response.data)*/
                 this.upload.images.push(response.config.filename + ': Uploaded successfully')
                 this.upload.status = STATUS_SUCCESS;
               })
               .catch(e => {
                 this.upload.images.push(e.config.filename + ': Error: ' + e.response.data.message)
-                /* this.upload.errors.push(e)
-                 * this.upload.errors.push(e.response.data.message)*/
                 this.upload.status = STATUS_FAILED;
               })
        }
@@ -483,7 +487,7 @@
  }
 
  .pap-scrollable {
-   height:450px;
+   height: 100%;
    overflow-y:scroll;
  }
 
