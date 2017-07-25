@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -26,6 +27,11 @@ type Config struct {
 	files    []string
 	jobCount int
 	timeout  int
+}
+
+type JsendMsg struct {
+	Message string `json:message`
+	Status  string `json:status`
 }
 
 func runCli(c *Config, args []string) (err error) {
@@ -155,12 +161,24 @@ func uploadFile(c *Config, file string) (err error) {
 	}
 	resp.Body.Close()
 
+	var jmsg JsendMsg
+
+	err = json.Unmarshal(body.Bytes(), &jmsg)
+	if err != nil {
+		// Ignore improper jsend messages
+		jmsg.Message = ""
+	}
+
 	if c.opts.IsSet("verbose") {
 		fmt.Println("Uploaded:", file, "Response:", body.String())
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		err = util.E.New("Server responded unexpectedly with code: %d", resp.StatusCode)
+		msg := ""
+		if jmsg.Message != "" {
+			msg = fmt.Sprintf(" (%s)", jmsg.Message)
+		}
+		err = util.E.New("Server responded with: %d%s", resp.StatusCode, msg)
 		return
 	}
 
