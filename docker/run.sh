@@ -7,7 +7,7 @@ die() {
 
 PAPERLESS=../paperless
 IMG=ubuntu-16.04-paperless:latest
-DATADIR=data
+DATADIR=../docker-data
 
 set -x
 
@@ -18,5 +18,5 @@ mkdir -p $DATADIR
 docker build . -t $IMG || die "Could not build the docker image"
 
 docker run -v $PWD/$PAPERLESS:/paperless -v $PWD/$DATADIR:/data \
-       --restart on-failure:3 \
+       --rm \
        $IMG
