@@ -10,10 +10,15 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync"
 	"time"
 
 	cli "github.com/jawher/mow.cli"
 	util "github.com/kopoli/go-util"
+)
+
+const (
+	APIPath string = "/api/v1/image"
 )
 
 type Config struct {
@@ -23,25 +28,29 @@ type Config struct {
 	timeout  int
 }
 
-func Cli(c *Config, args []string) (err error) {
+func runCli(c *Config, args []string) (err error) {
 	progName := c.opts.Get("program-name", "paperless-uploader")
 	progVersion := c.opts.Get("program-version", "undefined")
-	app := cli.App(progName, "Paperless Uploader")
+	app := cli.App(progName, "Upload tool to Paperless Office server.")
 
-	app.Version("version v", fmt.Sprintf("%s: %s\nBuilt with: %s/%s on %s/%s",
+	app.Version("version", fmt.Sprintf("%s: %s\nBuilt with: %s/%s on %s/%s",
 		progName, progVersion, runtime.Compiler, runtime.Version(),
 		runtime.GOOS, runtime.GOARCH))
 
 	app.Spec = "[OPTIONS] URL FILES..."
 
-	optTags := app.StringOpt("t tag", "", "Comma separated list of tags.")
 	optJobs := app.IntOpt("j jobs", runtime.NumCPU(), "Number of concurrent uploads")
-	optTimeout := app.IntOpt("timeout", 60, "HTTP/S timeout in seconds")
-	argURL := app.StringArg("URL", "", "The upload URL.")
+	optVerbose := app.BoolOpt("v verbose", false, "Print upload statuses")
+	optTags := app.StringOpt("t tag", "", "Comma separated list of tags.")
+	optTimeout := app.IntOpt("timeout", 60, "HTTP timeout in seconds")
+	argURL := app.StringArg("URL", "", "The upload HTTP URL.")
 	argFiles := app.StringsArg("FILES", []string{}, "Image files to upload.")
 
 	app.Action = func() {
 		c.opts.Set("tags", *optTags)
+		if *optVerbose {
+			c.opts.Set("verbose", "t")
+		}
 		c.opts.Set("url", *argURL)
 		c.jobCount = *optJobs
 		c.timeout = *optTimeout
@@ -57,7 +66,7 @@ func Cli(c *Config, args []string) (err error) {
 	return
 }
 
-func CheckArguments(c *Config) (err error) {
+func checkArguments(c *Config) (err error) {
 	var u *url.URL
 
 	urlstr := c.opts.Get("url", "")
@@ -83,7 +92,7 @@ func CheckArguments(c *Config) (err error) {
 	return
 }
 
-func UploadFile(c *Config, file string) (err error) {
+func uploadFile(c *Config, file string) (err error) {
 	fp, err := os.Open(file)
 	if err != nil {
 		return
@@ -111,9 +120,17 @@ func UploadFile(c *Config, file string) (err error) {
 		return
 	}
 
-	url := c.opts.Get("url", "") + "/api/v1/image"
+	apipath, err := url.Parse(APIPath)
+	if err != nil {
+		return
+	}
+	base, err := url.Parse(c.opts.Get("url", ""))
+	if err != nil {
+		return
+	}
 
-	req, err := http.NewRequest("POST", url, body)
+	urlstr := base.ResolveReference(apipath).String()
+	req, err := http.NewRequest("POST", urlstr, body)
 	if err != nil {
 		return
 	}
@@ -135,7 +152,10 @@ func UploadFile(c *Config, file string) (err error) {
 	}
 	resp.Body.Close()
 
-	fmt.Println("Uploaded:", file, "Response:", body.String())
+	if c.opts.IsSet("verbose") {
+		fmt.Println("Uploaded to url:", urlstr)
+		fmt.Println("Uploaded:", file, "Response:", body.String())
+	}
 
 	if resp.StatusCode != http.StatusCreated {
 		err = util.E.New("Server responded unexpectedly with code: %d", resp.StatusCode)
@@ -145,37 +165,62 @@ func UploadFile(c *Config, file string) (err error) {
 	return
 }
 
+func upload(c *Config) (err error) {
+	jobs := make(chan string, 10)
+	wg := sync.WaitGroup{}
+	worker := func(jobs <-chan string) {
+		var err error
+		for file := range jobs {
+			err = uploadFile(c, file)
+			if err != nil {
+				fmt.Printf("%s: failed: %s\n", file, err)
+			} else {
+				fmt.Printf("%s: Uploaded ok\n", file)
+			}
+		}
+		wg.Done()
+	}
+
+	for i := 0; i < c.jobCount; i++ {
+		wg.Add(1)
+		go worker(jobs)
+	}
+
+	for i := range c.files {
+		jobs <- c.files[i]
+	}
+
+	close(jobs)
+	wg.Wait()
+
+	return nil
+}
+
 func main() {
-	ret := 0
 	config := &Config{
 		opts: util.NewOptions(),
 	}
 
 	config.opts.Set("program-name", os.Args[0])
 
-	err := Cli(config, os.Args)
+	err := runCli(config, os.Args)
 	if err != nil {
 		err = util.E.Annotate(err, "Command line parsing failed")
 		goto error
 	}
 
-	err = CheckArguments(config)
+	err = checkArguments(config)
 	if err != nil {
 		err = util.E.Annotate(err, "Invalid arguments")
 		goto error
 	}
 
-	fmt.Println("Files:", config.files)
-
-	for i := range config.files {
-		err = UploadFile(config, config.files[i])
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "Uploading file:", config.files[i],"failed with:",err)
-			ret = 1
-		}
+	err = upload(config)
+	if err != nil {
+		goto error
 	}
 
-	os.Exit(ret)
+	os.Exit(0)
 
 error:
 	fmt.Fprintln(os.Stderr, "Error:", err)
