@@ -48,6 +48,26 @@
    This should start an Ubuntu 16.04 Docker instance where the program is
    running.
 
+** Uploader application
+
+   In the uploader directory there is a go-application that can be used to
+   send batches of tagged images to the server.
+
+   Build it with the following:
+
+   #+begin_src shell
+   cd uploader
+   go build
+   #+end_src
+
+   Example run:
+
+   #+begin_src shell
+   ./uploader -t important,dontremove http://localhost:8078 important-01.jpg important-02.jpg
+   #+end_src
+
+   Usage is printed with the --help argument.
+
 ** License
 
    MIT license
