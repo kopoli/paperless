@@ -75,6 +75,15 @@ func checkArguments(c *Config) (err error) {
 		return
 	}
 
+	apipath, err := url.Parse(APIPath)
+	if err != nil {
+		return
+	}
+
+	// Set the proper URL here
+	urlstr = u.ResolveReference(apipath).String()
+	c.opts.Set("url", urlstr)
+
 	if !u.IsAbs() {
 		err = util.E.New("Supplied URL must be absolute: %s", urlstr)
 		return
@@ -87,6 +96,10 @@ func checkArguments(c *Config) (err error) {
 			err = util.E.New("Invalid file: %s", c.files[i])
 			return
 		}
+	}
+
+	if c.opts.IsSet("verbose") {
+		fmt.Println("Uploading to URL:", urlstr)
 	}
 
 	return
@@ -120,17 +133,7 @@ func uploadFile(c *Config, file string) (err error) {
 		return
 	}
 
-	apipath, err := url.Parse(APIPath)
-	if err != nil {
-		return
-	}
-	base, err := url.Parse(c.opts.Get("url", ""))
-	if err != nil {
-		return
-	}
-
-	urlstr := base.ResolveReference(apipath).String()
-	req, err := http.NewRequest("POST", urlstr, body)
+	req, err := http.NewRequest("POST", c.opts.Get("url", ""), body)
 	if err != nil {
 		return
 	}
@@ -153,7 +156,6 @@ func uploadFile(c *Config, file string) (err error) {
 	resp.Body.Close()
 
 	if c.opts.IsSet("verbose") {
-		fmt.Println("Uploaded to url:", urlstr)
 		fmt.Println("Uploaded:", file, "Response:", body.String())
 	}
 
