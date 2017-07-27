@@ -386,8 +386,13 @@
 
      paginateHandler: function(page) {
        console.log(page);
-       this.switchURL('?since=' + encodeURIComponent(this.paging.starts[page - 1]) + '&count=' +
-                      encodeURIComponent(this.paging.perpage))
+       var url = 'since=' + encodeURIComponent(this.paging.starts[page - 1]) +
+                 '&count=' + encodeURIComponent(this.paging.perpage);
+       if(this.query != '') {
+         url = 'q=' + this.query + '&' + url
+       }
+
+       this.switchURL('?' + url)
      },
 
      showInfo: function(image) {
