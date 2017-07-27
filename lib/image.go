@@ -25,7 +25,7 @@ func SaveImage(filename string, data []byte, db *db, destdir string, tags string
 	ft := http.DetectContentType(data)
 	var ok bool
 	if ret.Fileid, ok = supportedTypes[ft]; !ok {
-		err = util.E.New("Unsupported image type:", ft)
+		err = util.E.New("Unsupported image type: %s", ft)
 		return
 	}
 
