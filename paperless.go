@@ -9,6 +9,11 @@ import (
 	"github.com/kopoli/paperless/lib"
 )
 
+var (
+	version      = "Undefined"
+	timestamp    = "Undefined"
+)
+
 func printErr(err error, message string, arg ...string) {
 	msg := ""
 	if err != nil {
@@ -24,6 +29,8 @@ func fault(err error, message string, arg ...string) {
 
 func main() {
 	opts := util.NewOptions()
+	opts.Set("program-name", os.Args[0])
+	opts.Set("program-version", version)
 
 	err := paperless.Cli(opts, os.Args)
 	if err != nil {
