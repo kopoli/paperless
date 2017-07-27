@@ -22,7 +22,7 @@
         <div class="pap-dropbox">
           <form class="form-inline" enctype="multipart/form-data">
             <input type="file" name="image" multiple :disabled="isUploading" accept="image/*"
-                   @change="startUpload($event.target.name, $event.target.files)"
+                   @change="doStartUpload($event.target.name, $event.target.files)"
                    class="pap-input-file" />
             <p v-if="!isUploading">
               Click or drag images here to upload
@@ -67,7 +67,7 @@
                   </a>
                 </li>
                 <li>
-                  <a href="javascript:void(0)" @click="deleteImage()">
+                  <a href="javascript:void(0)" @click="doDeleteImage()">
                     {{info.confirmDelete ? "Confirm delete image?" : "Delete image"}}
                   </a>
                 </li>
@@ -137,7 +137,8 @@
     <!-- Search results -->
     <div class="container pap-body">
       <div class="list-group">
-        <a href="javascript:void(0)" @click.prevent.stop="showInfo(image)" v-for="image in images" class="list-group-item pap-item">
+        <a href="javascript:void(0)" @click.prevent.stop="doShowInfo(image)"
+           v-for="image in images" class="list-group-item pap-item">
           <div class="media">
             <div class="media-left">
               <img class="media-object img-rounded" :src="imgbase + image.ThumbImg"
@@ -276,10 +277,12 @@
        this.applyURL()
      },
 
+     // reset URL back to default
      resetURL: function() {
        this.switchURL('/')
      },
 
+     // reset URL back to previous
      previousURL: function() {
        if (history.state && 'paperless_path' in history.state) {
          this.switchURL(history.state.paperless_path)
@@ -288,6 +291,7 @@
        }
      },
 
+     // close the current modal pane
      modalClose: function() {
        this.previousURL()
      },
@@ -367,17 +371,19 @@
        this.switchURL('?' + url)
      },
 
-     showInfo: function(image) {
+     // open the info modal pane
+     doShowInfo: function(image) {
        this.info.image = image
        this.switchURL('info/?id=' + encodeURIComponent(image.Id))
      },
 
-     /* Uploading functionality*/
+     // open the upload modal pane
      doUpload: function() {
        this.switchURL('upload')
      },
 
-     startUpload: function(name, files) {
+     // start uploading files
+     doStartUpload: function(name, files) {
        if (!files.length) {
          return
        }
@@ -401,8 +407,8 @@
        this.upload.status = STATUS_UPLOADING;
      },
 
-     // user clicks the delete-button for an image in the info-page
-     deleteImage: function() {
+     // delete image. First call pops up a confirmation, second sends the DELETE query
+     doDeleteImage: function() {
        if (this.info.confirmDelete) {
          ImageApi.delete('/'+ parseInt(this.info.image.Id))
                  .then(response => {
