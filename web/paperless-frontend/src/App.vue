@@ -256,7 +256,7 @@
      truncate: function(value) {
        value = value.toString()
        if (value.length > 300) {
-         return value.slice(1,300) + " [...]"
+         return value.slice(0,300) + " [...]"
        }
        return value
      }
