@@ -473,7 +473,7 @@
  }
 
  button.pap-search-btn:hover {
-   color: #0d8e53;
+   color: #26a76d;
  }
 
  .pap-active {
@@ -491,11 +491,11 @@
  }
 
  .pagination li a:hover {
-   color: #0d8e53;
+   color: #26a76d;
  }
 
  .pagination li a:focus {
-   color: #0d8e53;
+   color: #26a76d;
  }
 
  .page-item {
@@ -507,6 +507,11 @@
  }
 
  .pagination > .active > a:hover {
+   background-color: #26a76d;
+   border-color: #26a76d;
+ }
+
+ .pagination > .active > a:focus {
    background-color: #0d8e53;
    border-color: #0d8e53;
  }
