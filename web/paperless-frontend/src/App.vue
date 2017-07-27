@@ -126,6 +126,7 @@
           :margin-pages="2"
           :force-page="paging.current"
           :click-handler="doPaginate"
+          ref="paginate"
           :prev-text="'Prev'"
           :next-text="'Next'"
           :container-class="'pagination'"
@@ -167,6 +168,7 @@
           :margin-pages="2"
           :force-page="paging.current"
           :click-handler="doPaginate"
+          ref="paginate"
           :prev-text="'Prev'"
           :next-text="'Next'"
           :container-class="'pagination'"
@@ -320,12 +322,18 @@
                    vm.paging.starts = response.data.data.SinceIDs
                    vm.paging.pages = vm.paging.starts.length
                    vm.paging.perpage = response.data.data.Count
+                   var page = -1
                    for (var i=0; i<vm.paging.starts.length; i++) {
                      if (since == vm.paging.starts[i]) {
-                       vm.paging.current = i
+                       page = i
                        break
                      }
                    }
+                   if (page == -1) {
+                     page = 0
+                   }
+                   vm.paging.current = page
+                   vm.$refs.paginate.selected = page
                  })
                  .catch(function(e) {
                    vm.errors.push(e)
