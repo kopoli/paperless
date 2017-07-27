@@ -68,6 +68,56 @@
 
    Usage is printed with the --help argument.
 
+** Developing the frontend
+
+   The frontend development requires Nodejs and NPM. Therefore the
+   environment can be set up with:
+
+   #+begin_src shell
+   cd web/paperless-frontend
+   npm install
+   #+end_src
+
+   To set up a running environment do the following:
+
+   1. Start the paperless -application to get the backend running in port 8078.
+
+   2. Start the webpack-dev-server with:
+
+      #+begin_src shell
+      cd web/paperless-frontend
+      npm run dev
+      #+end_src
+
+   3. This will start the frontend to port 8080 that connects to the backend
+      in port 8078.
+
+
+   The frontend is embedded in the final binary. To update the changes from
+   the frontend development files to the binary, do the following:
+
+   1. Install the 'esc' file embedder, so the esc can be found in the $PATH.
+
+      #+begin_src shell
+      go get -i github.com/mjibson/esc
+      #+end_src
+
+   2. Build the dist-package of the frontend:
+
+      #+begin_src shell
+      cd web/paperless-frontend
+      npm run build
+      #+end_src
+
+   3. Regenerate the lib/web-generated.go with:
+
+      #+begin_src shell
+      cd lib
+      go generate
+      #+end_src
+
+   4. Build normally, test and commit the generated files.
+
 ** License
 
    MIT license
