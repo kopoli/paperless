@@ -364,7 +364,7 @@
      doPaginate: function(page) {
        var url = 'since=' + encodeURIComponent(this.paging.starts[page - 1]) +
                  '&count=' + encodeURIComponent(this.paging.perpage);
-       if(this.query != '') {
+       if(this.query && this.query != '') {
          url = 'q=' + this.query + '&' + url
        }
 
