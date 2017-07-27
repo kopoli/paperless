@@ -232,8 +232,6 @@
      var vm = this;
 
      window.onpopstate = function(event) {
-       console.log("OnPopState funktiossa ja polku on " + window.location)
-       console.log(event)
        vm.applyURL()
      }
    },
@@ -275,7 +273,6 @@
        }
 
        history.pushState({paperless_path: resource}, "paperless office", path)
-       console.log("Changing to URL: " + window.location)
        this.applyURL()
      },
 
@@ -284,8 +281,6 @@
      },
 
      previousURL: function() {
-       console.log("State value when going back")
-       console.log(history.state)
        if (history.state && 'paperless_path' in history.state) {
          this.switchURL(history.state.paperless_path)
        } else {
@@ -294,21 +289,12 @@
      },
 
      modalClose: function() {
-       console.log("Closing a modal!");
        this.previousURL()
      },
 
      // interpret URL when changing a view
      applyURL: function() {
-       // interpret URL when changing a view
-       // - Load models from backend
-
        var url = new Url()
-       console.log("JEJE!")
-       console.log(url)
-       console.log(this)
-       /* console.log(this)
-        */
 
        /* Main UI with image searching */
        if (url.path === '/') {
@@ -325,8 +311,6 @@
            count: url.query.count,
          }})
                  .then(function(response) {
-                   console.log("RESPONSE")
-                   console.log(response)
                    vm.images = response.data.data.Images
                    vm.matches = response.data.data.ResultCount
                    vm.paging.starts = response.data.data.SinceIDs
@@ -343,9 +327,6 @@
                    vm.errors.push(e)
                  })
        } else if (url.path === '/info/') {
-         console.log("Päästiin modaaliseksi!")
-         console.log(this.info.image)
-
          this.info.showLog = false
          this.info.confirmDelete = false;
          if (this.info.image !== {}) {
@@ -355,8 +336,6 @@
            }
            ImageApi.get('/'+ parseInt(url.query.id))
                    .then(response => {
-                     console.log("Single image query")
-                     console.log(response)
                      this.info.image = response.data.data
                      this.$modal.show('image-info')
                    })
@@ -364,28 +343,21 @@
                      this.errors.push(e)
                    })
          } else {
-           console.log("Näytetään modaalinen ikkuna!!")
-           console.log(this.info.image)
            this.$modal.show('image-info')
          }
        } else if (url.path === '/upload') {
-         console.log("Upload päälle")
-         console.log(this.$modal)
          this.upload.uploading = false;
          this.$modal.show('upload')
        } else {
-         console.log("Unknown path. restarting to default")
          this.resetURL()
        }
      },
 
      doSearch: function() {
-       console.log("QUERYING: " + this.query)
        this.switchURL('?q=' + encodeURIComponent(this.query))
      },
 
      paginateHandler: function(page) {
-       console.log(page);
        var url = 'since=' + encodeURIComponent(this.paging.starts[page - 1]) +
                  '&count=' + encodeURIComponent(this.paging.perpage);
        if(this.query != '') {
@@ -397,9 +369,6 @@
 
      showInfo: function(image) {
        this.info.image = image
-
-       console.log("Showing info on image: ")
-       console.log(image)
        this.switchURL('info/?id=' + encodeURIComponent(image.Id))
      },
 
@@ -409,9 +378,6 @@
      },
 
      startUpload: function(name, files) {
-       console.log(name);
-       console.log(files);
-
        if (!files.length) {
          return
        }
