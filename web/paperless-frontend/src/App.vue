@@ -125,7 +125,7 @@
           :page-range="3"
           :margin-pages="2"
           :force-page="paging.current"
-          :click-handler="paginateHandler"
+          :click-handler="doPaginate"
           :prev-text="'Prev'"
           :next-text="'Next'"
           :container-class="'pagination'"
@@ -165,7 +165,7 @@
           :page-range="3"
           :margin-pages="2"
           :force-page="paging.current"
-          :click-handler="paginateHandler"
+          :click-handler="doPaginate"
           :prev-text="'Prev'"
           :next-text="'Next'"
           :container-class="'pagination'"
@@ -357,7 +357,7 @@
        this.switchURL('?q=' + encodeURIComponent(this.query))
      },
 
-     paginateHandler: function(page) {
+     doPaginate: function(page) {
        var url = 'since=' + encodeURIComponent(this.paging.starts[page - 1]) +
                  '&count=' + encodeURIComponent(this.paging.perpage);
        if(this.query != '') {
