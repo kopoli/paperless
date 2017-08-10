@@ -34,14 +34,14 @@ func compare(t *testing.T, msg string, a, b interface{}) {
 	}
 }
 
-var dbfile = "test.sqlite"
+var dbfile = ":memory:"
 
 func setupDb() (*db, error) {
 	return openDbFile(dbfile)
 }
 
 func clearDbFile(dbfile string) error {
-	return os.Remove(dbfile)
+	return nil
 }
 
 func teardownDb() (err error) {
