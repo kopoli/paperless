@@ -2,6 +2,7 @@ package paperless
 
 import (
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -396,5 +397,86 @@ func Test_db_Image(t *testing.T) {
 		if err != nil {
 			t.Errorf("Could not remove database file: %v", err)
 		}
+	}
+}
+
+func withDb(f func(*db) error) (err error) {
+	_ = teardownDb()
+	db, err := setupDb()
+	if err != nil {
+		return
+	}
+
+	e2 := f(db)
+
+	db.Close()
+	err = teardownDb()
+	if err != nil {
+		return
+	}
+
+	return e2
+}
+
+func addImages(db *db, count int) (err error) {
+	for i := 0; i < count; i++ {
+		idStr := "id:" + strconv.Itoa(i + 1)
+		_, err = db.addImage(Image{
+			Checksum:   idStr,
+			Text: "jep " + idStr,
+			ProcessLog: "jeje",
+		})
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+func Benchmark_getImages(b *testing.B) {
+
+	var countImages int = 100
+
+	err := withDb(func(db *db) (err error) {
+		err = addImages(db, countImages)
+		if err != nil {
+			b.Errorf("Adding images failed: %v", err)
+		}
+
+		b.ResetTimer()
+
+		tests := []struct {
+			name string
+			page *Page
+			search *Search
+			count int
+		}{
+			{"Get all images", nil, nil, countImages},
+			{"Get page of 10 images", &Page{SinceId: 3, Count: 10}, nil, 10},
+			{"Get all images with string 7", nil, &Search{Match: "*7*"}, 11},
+		}
+
+		for _, tt := range tests {
+			b.Run(tt.name, func(b *testing.B) {
+				var is []Image
+				for i := 0; i < b.N; i++ {
+					is, err = db.getImages(tt.page, tt.search)
+					if err != nil {
+						b.Errorf("Getting images failed: %v", err)
+						return
+					}
+					if len(is) != tt.count {
+						b.Errorf("Expected %d images got %d images", tt.count, len(is))
+					}
+				}
+			})
+		}
+
+
+		return
+	})
+
+	if err != nil {
+		b.Errorf("Database handling failed with: %v", err)
 	}
 }
