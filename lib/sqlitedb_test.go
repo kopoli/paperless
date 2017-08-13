@@ -303,7 +303,7 @@ func Test_db_Image(t *testing.T) {
 		}
 	}
 
-	cmp := func(i1, i2 []Image) {
+	cmp := func(t *testing.T, i1, i2 []Image) {
 		for n := range i1 {
 			i1[n].AddDate = time.Time{}
 		}
@@ -390,7 +390,7 @@ func Test_db_Image(t *testing.T) {
 				t.Errorf("db.getImages() error = %v", err)
 			}
 
-			cmp(tt.wantImages, images)
+			cmp(t, tt.wantImages, images.Images)
 		})
 		db.Close()
 		err = teardownDb()
@@ -420,10 +420,10 @@ func withDb(f func(*db) error) (err error) {
 
 func addImages(db *db, count int) (err error) {
 	for i := 0; i < count; i++ {
-		idStr := "id:" + strconv.Itoa(i + 1)
+		idStr := "id:" + strconv.Itoa(i+1)
 		_, err = db.addImage(Image{
 			Checksum:   idStr,
-			Text: "jep " + idStr,
+			Text:       "jep " + idStr,
 			ProcessLog: "jeje",
 		})
 		if err != nil {
@@ -446,10 +446,10 @@ func Benchmark_getImages(b *testing.B) {
 		b.ResetTimer()
 
 		tests := []struct {
-			name string
-			page *Page
+			name   string
+			page   *Page
 			search *Search
-			count int
+			count  int
 		}{
 			{"Get all images", nil, nil, countImages},
 			{"Get page of 10 images", &Page{SinceId: 3, Count: 10}, nil, 10},
@@ -458,20 +458,19 @@ func Benchmark_getImages(b *testing.B) {
 
 		for _, tt := range tests {
 			b.Run(tt.name, func(b *testing.B) {
-				var is []Image
+				var is ImageResult
 				for i := 0; i < b.N; i++ {
 					is, err = db.getImages(tt.page, tt.search)
 					if err != nil {
 						b.Errorf("Getting images failed: %v", err)
 						return
 					}
-					if len(is) != tt.count {
-						b.Errorf("Expected %d images got %d images", tt.count, len(is))
+					if len(is.Images) != tt.count {
+						b.Errorf("Expected %d images got %d images", tt.count, len(is.Images))
 					}
 				}
 			})
 		}
-
 
 		return
 	})

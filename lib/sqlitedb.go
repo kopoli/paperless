@@ -29,6 +29,23 @@ type Page struct {
 	Count int
 }
 
+// PageResult adds navigation information to the paginated data
+type PageResult struct {
+	// Number of items returned by the whole search
+	ResultCount int
+
+	// IDs of the items that are the first of their page
+	SinceIDs []int
+
+	// Count is the number of items in the page
+	Count int
+}
+
+type ImageResult struct {
+	PageResult
+	Images []Image
+}
+
 type Search struct {
 	ID      int
 	OrderBy string
@@ -150,15 +167,15 @@ func (db *db) getImage(id int) (ret Image, err error) {
 		return
 	}
 
-	if len(imgs) == 0 {
+	if len(imgs.Images) == 0 {
 		err = util.E.New("No image found with id %d", id)
 		return
 	}
-	if len(imgs) > 1 {
+	if len(imgs.Images) > 1 {
 		err = util.E.New("Internal error: Multiple images with the same id")
 		return
 	}
-	ret = imgs[0]
+	ret = imgs.Images[0]
 	return
 }
 
@@ -254,8 +271,8 @@ func withTx(db *db, f func(*sqlx.Tx) error) (err error) {
 	return
 }
 
-func (db *db) getImages(p *Page, s *Search) (ret []Image, err error) {
-	query := "SELECT * FROM image, imgtext"
+func (db *db) getImages(p *Page, s *Search) (ret ImageResult, err error) {
+	query := "SELECT id FROM image, imgtext"
 	order := " ORDER BY image.id ASC"
 
 	where := " WHERE imgtext.rowid = image.id"
@@ -276,30 +293,79 @@ func (db *db) getImages(p *Page, s *Search) (ret []Image, err error) {
 			args["order"] = s.OrderBy
 		}
 	}
-	if p != nil {
-		where = where + " AND (image.id > :id)"
-		args["id"] = fmt.Sprintf("%d", p.SinceId)
-		order = order + " LIMIT :limit"
-		args["limit"] = fmt.Sprintf("%d", p.Count)
-	}
-
 	query = query + where + order
 
 	nstmt, err := db.PrepareNamed(query)
 	if err != nil {
 		return
 	}
-	defer nstmt.Close()
 
-	err = nstmt.Select(&ret, args)
+	var ids []int
+
+	err = nstmt.Select(&ids, args)
+	if err != nil {
+		nstmt.Close()
+		return
+	}
+	nstmt.Close()
+
+	ret.ResultCount = len(ids)
+
+	// No images found
+	if ret.ResultCount == 0 {
+		ret.SinceIDs = make([]int, 0)
+		return
+	}
+
+	if p == nil {
+		ret.Count = 0
+		ret.SinceIDs = make([]int, 1)
+		ret.SinceIDs[0] = ids[0]
+	} else {
+		ret.Count = p.Count
+		pages := ret.ResultCount / ret.Count
+		if (ret.ResultCount % ret.Count) > 0 {
+			pages += 1
+		}
+
+		ret.SinceIDs = make([]int, pages)
+		for i := range ret.SinceIDs {
+			ret.SinceIDs[i] = ids[ret.Count*i]
+		}
+
+		var start int = -1
+		var realcount int = 0
+		for i := range ids {
+			if ids[i] == p.SinceId {
+				start = i + 1
+				break
+			}
+		}
+		if start == -1 || start >= len(ids) {
+			start = 0
+		}
+
+		realcount = ret.ResultCount - start
+		if realcount > ret.Count {
+			realcount = ret.Count
+		}
+
+		ids = ids[start : start+realcount]
+	}
+
+	q, qargs, err := sqlx.In(`SELECT * from image, imgtext WHERE imgtext.rowid = image.id AND image.id IN (?)`, ids)
+	if err != nil {
+		return
+	}
+	err = db.Select(&ret.Images, q, qargs...)
 	if err != nil {
 		return
 	}
 
 	err = withTx(db, func(tx *sqlx.Tx) (err error) {
-		for i := range ret {
-			err = tx.Select(&ret[i].Tags, `SELECT tag.id, tag.name, tag.comment FROM tag, imgtag
-                                                       WHERE imgtag.tagid = tag.id AND imgtag.imgid = $1 `, ret[i].Id)
+		for i := range ret.Images {
+			err = tx.Select(&ret.Images[i].Tags, `SELECT tag.id, tag.name, tag.comment FROM tag, imgtag
+                                                       WHERE imgtag.tagid = tag.id AND imgtag.imgid = $1 `, ret.Images[i].Id)
 			if err != nil {
 				return
 			}

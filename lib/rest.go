@@ -170,20 +170,8 @@ requestError:
 
 // Image handling
 
-type pagingresult struct {
-
-	// Number of items returned by the whole search
-	ResultCount int
-
-	// IDs of the items that are the first of their page
-	SinceIDs []int
-
-	// Count is the number of items in the page
-	Count int
-}
-
 type resultimg struct {
-	pagingresult
+	PageResult
 
 	Images []restimg
 }
@@ -207,50 +195,12 @@ func (b *backend) wrapImage(img *Image) (ret restimg) {
 	return
 }
 
-func (b *backend) wrapImages(page *Page, imgs []Image) (ret resultimg) {
-	ret.ResultCount = len(imgs)
+func (b *backend) wrapImages(imgs ImageResult) (ret resultimg) {
+	ret.PageResult = imgs.PageResult
 
-	if page == nil {
-		ret.Count = 0
-		ret.SinceIDs = make([]int, 1)
-		ret.SinceIDs[0] = ret.Images[0].Id
-
-		ret.Images = make([]restimg, len(imgs))
-		for i := range imgs {
-			ret.Images[i] = b.wrapImage(&imgs[i])
-		}
-	} else {
-		ret.Count = page.Count
-
-		pages := ret.ResultCount / ret.Count
-		if (ret.ResultCount % ret.Count) > 0 {
-			pages += 1
-		}
-		ret.SinceIDs = make([]int, pages)
-
-		// fmt.Fprintf(os.Stderr, "len ids %d count %d len images %d\n", len(ret.SinceIDs), ret.Count, len(imgs))
-		for i := range ret.SinceIDs {
-			// fmt.Fprintf(os.Stderr, "len %d, i %d id %d\n", len(ret.SinceIDs), i, imgs[ret.Count*i].Id)
-			ret.SinceIDs[i] = imgs[ret.Count*i].Id
-		}
-
-		var start int = 0
-		var realcount int = 0
-		for i := range imgs {
-			if imgs[i].Id == page.SinceId {
-				start = i
-				break
-			}
-		}
-
-		realcount = ret.ResultCount - start
-		if realcount > ret.Count {
-			realcount = ret.Count
-		}
-		ret.Images = make([]restimg, realcount)
-		for i := range ret.Images {
-			ret.Images[i] = b.wrapImage(&imgs[start+i])
-		}
+	ret.Images = make([]restimg, len(imgs.Images))
+	for i := range imgs.Images {
+		ret.Images[i] = b.wrapImage(&imgs.Images[i])
 	}
 
 	return
@@ -313,15 +263,14 @@ func (b *backend) imageHandler(w http.ResponseWriter, r *http.Request) {
 			s = &Search{Match: query}
 		}
 
-		// TODO give the paging to the db function
-		images, e2 := b.db.getImages(nil, s)
+		images, e2 := b.db.getImages(p, s)
 		if e2 != nil {
 			err = e2
 			annotate("Getting images from db failed")
 			goto requestError
 		}
 
-		jsend.Wrap(w).Status(http.StatusOK).Data(b.wrapImages(p, images)).Send()
+		jsend.Wrap(w).Status(http.StatusOK).Data(b.wrapImages(images)).Send()
 	}
 
 	return
