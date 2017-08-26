@@ -107,8 +107,10 @@ func (l *lexer) Deinit() {
 }
 
 func (l *lexer) emit(t TokenType) {
-	l.tokens <- Token{t, l.input[l.start:l.pos], l.start}
-	l.start = l.pos
+	if l.hasContents() {
+		l.tokens <- Token{t, l.input[l.start:l.pos], l.start}
+		l.start = l.pos
+	}
 }
 
 func (l *lexer) next() rune {
@@ -127,6 +129,11 @@ func (l *lexer) rewind() {
 	l.pos -= l.width
 }
 
+func (l *lexer) skip() {
+	l.pos += l.width
+	l.width = 0
+}
+
 func (l *lexer) ignore() {
 	l.start = l.pos
 }
@@ -143,6 +150,14 @@ func (l *lexer) hasPrefix(prefix string) bool {
 		return true
 	}
 	return false
+}
+
+func (l *lexer) hasContents() bool {
+	return l.pos > l.start
+}
+
+func (l *lexer) isEqual(s string) bool {
+	return s == l.input[l.start:l.pos]
 }
 
 func (l *lexer) acceptRune(charclass string) bool {
@@ -173,41 +188,61 @@ func lexTop(l *lexer) stateFunc {
 	for {
 		r := l.next()
 		if r == eof {
+			l.emit(TokString)
 			break
 		}
 		switch {
 		case unicode.IsSpace(r):
-			l.ignore()
+			if l.hasContents() {
+				l.rewind()
+				l.emit(TokString)
+				l.next()
+			}
 		case r == '"':
 			l.push(lexTop)
 			return lexQuoted
+		case r == '(':
+			l.emit(TokParOpen)
+			l.push(lexTop)
+			return lexParentheses
 		}
-	}
-
-	if l.pos > l.start {
-		l.errorf("Internal error: Following not handled: %s", l.input[l.start:l.pos])
 	}
 
 	l.emit(TokEOF)
 	return nil
 }
 
-func lexString(l *lexer) stateFunc {
-	// r := l.next()
-
-	if l.hasPrefix("AND ") {
-		l.emit(TokString)
-		
+func lexWord(l *lexer) stateFunc {
+	r := l.next()
+	switch {
+	case r == eof || unicode.IsSpace(r):
+		l.rewind()
+		reserved := map[string]TokenType{
+			"AND": TokAnd,
+			"OR":  TokOr,
+		}
+		for k, v := range reserved {
+			if l.isEqual(k) {
+				l.emit(v)
+				return l.pop()
+			}
+		}
 	}
+	return lexWord
+}
 
+func lexParentheses(l *lexer) stateFunc {
 	r := l.next()
 	switch r {
-	case '"':
-		l.push(lexString)
-		return lexQuoted
+	case eof:
+		l.errorf("Unmatched parenthesis")
+		return nil
+	case ')':
+		l.emit(TokParClose)
+		return l.pop()
 	}
-
-	return lexString
+	
+	return nil
 }
 
 func lexQuoted(l *lexer) stateFunc {
