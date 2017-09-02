@@ -11,10 +11,9 @@ type TokenType int
 
 const (
 	eof      rune      = -1
+	TokEOF   TokenType = -1
 	TokError TokenType = iota
 	TokCanceled
-	TokEOF
-	TokEmpty
 	TokAnd
 	TokOr
 	TokNot
@@ -167,6 +166,7 @@ func (l *lexer) acceptRune(charclass string) bool {
 
 func (l *lexer) errorf(format string, args ...interface{}) stateFunc {
 	l.tokens <- Token{TokError, fmt.Sprintf(format, args...), l.pos}
+	l.ignore()
 	return nil
 }
 
@@ -184,28 +184,53 @@ func (l *lexer) pop() stateFunc {
 	return ret
 }
 
+func (l *lexer)lexHandleContent(r rune, this stateFunc) stateFunc {
+	switch {
+	case r == eof:
+		return l.errorf("Unexpected end of string")
+	case r == '"':
+		l.push(lexTop)
+		return lexQuoted
+	case r == '(':
+		l.emit(TokParOpen)
+		l.push(this)
+		return lexParentheses
+	case unicode.IsSpace(r):
+		l.ignore()
+	}
+	l.push(this)
+	return lexWord
+}
+
 func lexTop(l *lexer) stateFunc {
 	for {
 		r := l.next()
 		if r == eof {
-			l.emit(TokString)
+			if l.hasContents() {
+				l.emit(TokString)
+			}
 			break
 		}
-		switch {
-		case unicode.IsSpace(r):
-			if l.hasContents() {
-				l.rewind()
-				l.emit(TokString)
-				l.next()
-			}
-		case r == '"':
-			l.push(lexTop)
-			return lexQuoted
-		case r == '(':
-			l.emit(TokParOpen)
-			l.push(lexTop)
-			return lexParentheses
-		}
+		// switch {
+		// case r == '"':
+		// 	l.push(lexTop)
+		// 	return lexQuoted
+		// case r == '(':
+		// 	l.emit(TokParOpen)
+		// 	l.push(lexTop)
+		// 	return lexParentheses
+		// case unicode.IsSpace(r):
+		// 	// if l.hasContents() {
+		// 	// 	l.rewind()
+		// 	// 	l.emit(TokString)
+		// 	// 	l.next()
+		// 	// }
+		// 	l.ignore()
+		// default:
+		// 	l.push(lexTop)
+		// 	return lexWord
+		// }
+		return l.lexHandleContent(r, lexTop)
 	}
 
 	l.emit(TokEOF)
@@ -215,7 +240,7 @@ func lexTop(l *lexer) stateFunc {
 func lexWord(l *lexer) stateFunc {
 	r := l.next()
 	switch {
-	case r == eof || unicode.IsSpace(r):
+	case r == eof || unicode.IsSpace(r) || r == '(' || r == ')' || r == '"':
 		l.rewind()
 		reserved := map[string]TokenType{
 			"AND": TokAnd,
@@ -227,6 +252,9 @@ func lexWord(l *lexer) stateFunc {
 				return l.pop()
 			}
 		}
+
+		l.emit(TokString)
+		return l.pop()
 	}
 	return lexWord
 }
@@ -235,37 +263,27 @@ func lexParentheses(l *lexer) stateFunc {
 	r := l.next()
 	switch r {
 	case eof:
-		l.errorf("Unmatched parenthesis")
-		return nil
+		return l.errorf("Unmatched parenthesis")
 	case ')':
 		l.emit(TokParClose)
 		return l.pop()
 	}
-	
-	return nil
+	return l.lexHandleContent(r, lexParentheses)
 }
 
 func lexQuoted(l *lexer) stateFunc {
 	r := l.next()
-
-	switch {
-	case r == '"':
+	switch r {
+	case '"':
 		l.emit(TokString)
 		return l.pop()
-	case r == eof:
+	case eof:
 		return l.errorf("Unbalanced quotes")
 	}
 	return lexQuoted
 }
 
 func (l *lexer) run() {
-	// defer func() {
-	// close(l.tokens)
-	// close(l.cancel)
-	// l.clear("")
-	// l.initialized = false
-	// l.wg.Done()
-	// }()
 	for s := lexTop; s != nil; {
 		s = s(l)
 	}
