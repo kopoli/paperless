@@ -44,46 +44,20 @@ type lexer struct {
 	initialized bool
 
 	tokens chan Token
-
-	// wg     sync.WaitGroup
-	// cancel chan bool
-}
-
-// using functionality
-
-// TODO This is in the wrong place
-// EmitSQL
-func (s *Query) EmitSQL() string {
-	return ""
 }
 
 // Lexer public interface
 
-// func (l *lexer) clear(input string) {
-// 	l.input = input
-// 	l.start = 0
-// 	l.pos = 0
-// }
-
 func (l *lexer) Init(input string) {
-	// if l.initialized {
-	// 	l.cancel <- true
-	// 	l.wg.Wait()
-	// 	l.Deinit()
-	// }
 	l.Deinit()
-	// l.clear(input)
 	l.input = input
 	l.start = 0
 	l.pos = 0
 	l.width = 0
 	l.states = nil
 	l.tokens = make(chan Token)
-	// l.cancel = make(chan bool)
-	// l.wg = sync.WaitGroup{}
 	l.initialized = true
 
-	// l.wg.Add(1)
 	go l.run()
 }
 
@@ -128,24 +102,12 @@ func (l *lexer) rewind() {
 	l.pos -= l.width
 }
 
-func (l *lexer) skip() {
-	l.pos += l.width
-	l.width = 0
-}
-
 func (l *lexer) ignore() {
 	l.start = l.pos
 }
 
-func (l *lexer) peek() rune {
-	ret := l.next()
-	l.rewind()
-	return ret
-}
-
 func (l *lexer) hasPrefix(prefix string) bool {
 	if strings.HasPrefix(l.input[l.pos:], prefix) {
-		// l.pos += len(prefix)
 		return true
 	}
 	return false
@@ -157,11 +119,6 @@ func (l *lexer) hasContents() bool {
 
 func (l *lexer) isEqual(s string) bool {
 	return s == l.input[l.start:l.pos]
-}
-
-func (l *lexer) acceptRune(charclass string) bool {
-	// TODO
-	return false
 }
 
 func (l *lexer) errorf(format string, args ...interface{}) stateFunc {
@@ -184,7 +141,7 @@ func (l *lexer) pop() stateFunc {
 	return ret
 }
 
-func (l *lexer)lexHandleContent(r rune, this stateFunc) stateFunc {
+func (l *lexer) lexHandleContent(r rune, this stateFunc) stateFunc {
 	switch {
 	case r == eof:
 		return l.errorf("Unexpected end of string")
@@ -211,25 +168,6 @@ func lexTop(l *lexer) stateFunc {
 			}
 			break
 		}
-		// switch {
-		// case r == '"':
-		// 	l.push(lexTop)
-		// 	return lexQuoted
-		// case r == '(':
-		// 	l.emit(TokParOpen)
-		// 	l.push(lexTop)
-		// 	return lexParentheses
-		// case unicode.IsSpace(r):
-		// 	// if l.hasContents() {
-		// 	// 	l.rewind()
-		// 	// 	l.emit(TokString)
-		// 	// 	l.next()
-		// 	// }
-		// 	l.ignore()
-		// default:
-		// 	l.push(lexTop)
-		// 	return lexWord
-		// }
 		return l.lexHandleContent(r, lexTop)
 	}
 
