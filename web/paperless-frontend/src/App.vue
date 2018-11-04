@@ -110,7 +110,10 @@
     <!-- Information bar -->
     <div class="container pap-info panel">
       <div class="text-center">
-        matches: {{matches}} Results per page: {{images.length}}
+        matches: {{matches}} Results per page: {{images.length}} <br>
+        <button type="button" v-for="tag in tags" class="badge" style="margin-right:2pt" @click="doTagSearch(tag.Name)">
+          {{tag.Name}}
+        </button>
         <div class="alert alert-danger" v-for="err in errors">
           {{err}}
         </div>
@@ -182,7 +185,7 @@
 
 <script>
 
- import {ImageApi} from './rest'
+ import {ImageApi, TagApi} from './rest'
 
  import Url from 'domurl'
 
@@ -196,6 +199,7 @@
        imgbase: '',
        errors: [],
        images: [],
+       tags: [],
        query: '',
        matches: 0,
 
@@ -313,6 +317,7 @@
          var vm = this
          ImageApi.get('', {params: {
            q: url.query.q,
+           t: url.query.t,
            since: url.query.since,
            count: url.query.count,
          }})
@@ -334,6 +339,13 @@
                    }
                    vm.paging.current = page
                    vm.$refs.paginate.selected = page
+                 })
+                 .catch(function(e) {
+                   vm.errors.push(e)
+                 })
+         TagApi.get('', {params: {}})
+                 .then(function(response) {
+                   vm.tags = response.data.data
                  })
                  .catch(function(e) {
                    vm.errors.push(e)
@@ -367,6 +379,10 @@
 
      doSearch: function() {
        this.switchURL('?q=' + encodeURIComponent(this.query))
+     },
+
+     doTagSearch: function(tag) {
+       this.switchURL('?t=' + encodeURIComponent(tag))
      },
 
      doPaginate: function(page) {
