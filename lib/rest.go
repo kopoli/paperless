@@ -257,10 +257,11 @@ func (b *backend) imageHandler(w http.ResponseWriter, r *http.Request) {
 	case "GET":
 		p := getPaging(r)
 		query := r.URL.Query().Get("q")
+		tag := r.URL.Query().Get("t")
 
-		var s *Search
-		if query != "" {
-			s = &Search{Match: query}
+		s := &Search{
+			Match: query,
+			Tag: tag,
 		}
 
 		images, e2 := b.db.getImages(p, s)

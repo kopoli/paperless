@@ -50,6 +50,7 @@ type Search struct {
 	ID      int
 	OrderBy string
 	Match   string
+	Tag     string
 }
 
 func openDbFile(dbfile string) (ret *db, err error) {
@@ -272,7 +273,7 @@ func withTx(db *db, f func(*sqlx.Tx) error) (err error) {
 }
 
 func (db *db) getImages(p *Page, s *Search) (ret ImageResult, err error) {
-	query := "SELECT id FROM image, imgtext"
+	query := "SELECT image.id FROM image, imgtext"
 	order := " ORDER BY image.id ASC"
 
 	where := " WHERE imgtext.rowid = image.id"
@@ -287,6 +288,11 @@ func (db *db) getImages(p *Page, s *Search) (ret ImageResult, err error) {
 		if s.Match != "" {
 			where = where + " AND imgtext.text MATCH :match"
 			args["match"] = s.Match
+		}
+		if s.Tag != "" {
+			query = query + ", tag, imgtag"
+			where = where + " AND tag.name = :tag AND imgtag.tagid = tag.id AND imgtag.imgid = image.id"
+			args["tag"] = s.Tag
 		}
 		if s.OrderBy != "" {
 			order = " ORDER BY :order ASC"
