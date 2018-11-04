@@ -201,6 +201,7 @@
        images: [],
        tags: [],
        query: '',
+       tag: '',
        matches: 0,
 
        paging: {
@@ -379,10 +380,12 @@
 
      doSearch: function() {
        this.switchURL('?q=' + encodeURIComponent(this.query))
+       this.tag = ''
      },
 
      doTagSearch: function(tag) {
        this.switchURL('?t=' + encodeURIComponent(tag))
+       this.tag = tag
      },
 
      doPaginate: function(page) {
@@ -390,6 +393,9 @@
                  '&count=' + encodeURIComponent(this.paging.perpage);
        if(this.query && this.query != '') {
          url = 'q=' + this.query + '&' + url
+       }
+       if (this.tag && this.tag !== '') {
+         url = 't=' + this.tag + '&' + url
        }
 
        this.switchURL('?' + url)
