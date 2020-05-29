@@ -49,7 +49,7 @@
            :min-width="300"
            :min-height="600"
            width="80%"
-           height="90%">
+           height="auto">
       <div class="container-fluid">
         <h3>Image information</h3>
         <div class="row">
@@ -546,6 +546,7 @@
 
  .pap-text {
    max-width: 100%;
+   max-height: 400px;
    margin-top: 10px;
  }
 
