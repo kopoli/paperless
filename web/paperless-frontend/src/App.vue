@@ -312,7 +312,7 @@
          this.$modal.hide('image-info')
          this.$modal.hide('upload')
 
-         this.query = url.query.q
+         this.query = 'q' in url.query ? url.query.q : '';
 
          var since = url.query.since
          var vm = this
