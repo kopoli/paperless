@@ -50,14 +50,15 @@
            :min-height="600"
            width="80%"
            height="90%">
-      <div class="container">
+      <div class="container-fluid">
+        <h3>Image information</h3>
         <div class="row">
           <div class="col-md-2">
             <div class="navbar navbar-default navbar-collapse" style="margin-top: 10px">
               <ul class="nav navbar-nav">
                 <li>
                   <a target="_blank" :href="imgbase + info.image.CleanImg">
-                    <img class="img-rounded" :src="imgbase + info.image.ThumbImg" width="100px" />
+                    <img class="img-rounded pap-thumb" :src="imgbase + info.image.ThumbImg" />
                   </a>
                 </li>
                 <li><a target="_blank" :href="imgbase + info.image.OrigImg">Raw image</a></li>
@@ -544,8 +545,12 @@
  }
 
  .pap-text {
-   max-height: 500px;
+   max-width: 100%;
    margin-top: 10px;
+ }
+
+ .pap-thumb {
+   max-width: 100% !important;
  }
 
  /* file upload styles */
