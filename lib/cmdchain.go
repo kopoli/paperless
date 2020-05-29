@@ -181,7 +181,7 @@ func NewCmd(cmdstr string) (c *Cmd, err error) {
 	command := splitWsQuote(cmdstr)
 
 	if len(command) == 0 {
-		return nil, util.E.New("A command could not be parsed from:", cmdstr)
+		return nil, util.E.New("A command could not be parsed from: %s", cmdstr)
 	}
 
 	c = &Cmd{command}
