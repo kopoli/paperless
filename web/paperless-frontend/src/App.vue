@@ -32,11 +32,11 @@
             </p>
           </form>
         </div>
-        <div class="alert alert-danger" v-for="err in upload.errors">
+        <div class="alert alert-danger" v-for="err in upload.errors" :key="err">
           {{err}}
         </div>
         <ul style="margin-top: 10px">
-          <li v-for="image in upload.images">
+          <li v-for="image in upload.images" :key="image">
             {{image}}
           </li>
         </ul>
@@ -76,7 +76,7 @@
             </div>
           </div>
           <div class="col-md-10">
-            <span v-for="tag in info.image.Tags" class="badge">{{tag.Name}}</span>
+            <span v-for="tag in info.image.Tags" :key="tag" class="badge">{{tag.Name}}</span>
             <pre class="pre-scrollable pap-text">{{info.showLog ? info.image.ProcessLog : info.image.Text}}</pre>
 
             <!-- Debugging -->
@@ -112,10 +112,10 @@
     <div class="container pap-info panel">
       <div class="text-center">
         matches: {{matches}} Results per page: {{images.length}} <br>
-        <button type="button" v-for="tag in tags" class="badge" style="margin-right:2pt" @click="doTagSearch(tag.Name)">
+        <button type="button" v-for="tag in tags" :key="tag" class="badge" style="margin-right:2pt" @click="doTagSearch(tag.Name)">
           {{tag.Name}}
         </button>
-        <div class="alert alert-danger" v-for="err in errors">
+        <div class="alert alert-danger" v-for="err in errors" :key="err">
           {{err}}
         </div>
       </div>
@@ -143,7 +143,7 @@
     <div class="container pap-body">
       <div class="list-group">
         <a href="javascript:void(0)" @click.prevent.stop="doShowInfo(image)"
-           v-for="image in images" class="list-group-item pap-item">
+           v-for="image in images" :key="image" class="list-group-item pap-item">
           <div class="media">
             <div class="media-left">
               <img class="media-object img-rounded" :src="imgbase + image.ThumbImg"
@@ -151,7 +151,7 @@
             </div>
             <div class="media-body">
               <!-- <h4 class="media-heading"> -->
-                <span v-for="tag in image.Tags" class="badge">{{tag.Name}}</span>
+                <span v-for="tag in image.Tags" :key="tag" class="badge">{{tag.Name}}</span>
                 <!-- dirps -->
                 <!-- </h4> -->
                 <p>
@@ -222,10 +222,6 @@
          tags: "",
        },
 
-       info: {
-         visible: false,
-       },
-
        // modal image information page
        info: {
          image: {},
@@ -240,7 +236,7 @@
 
      var vm = this;
 
-     window.onpopstate = function(event) {
+     window.onpopstate = function() {
        vm.applyURL()
      }
    },
@@ -442,7 +438,7 @@
      doDeleteImage: function() {
        if (this.info.confirmDelete) {
          ImageApi.delete('/'+ parseInt(this.info.image.Id))
-                 .then(response => {
+                 .then(() => {
                    this.info.image = {}
                  })
                  .catch(e => {
