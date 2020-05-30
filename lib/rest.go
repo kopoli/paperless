@@ -1,6 +1,6 @@
 package paperless
 
-//go:generate esc -o web-generated.go -pkg paperless -private -prefix ../web/paperless-frontend ../web/paperless-frontend/index.html ../web/paperless-frontend/dist/
+//go:generate esc -o web-generated.go -pkg paperless -private -prefix ../web/paperless-frontend ../web/paperless-frontend/dist/
 
 import (
 	"bytes"
@@ -437,7 +437,7 @@ func StartWeb(o util.Options) (err error) {
 
 	r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
 		fs := _escFS(false)
-		httpfile, _ := fs.Open("/index.html")
+		httpfile, _ := fs.Open("/dist/index.html")
 		st, _ := httpfile.Stat()
 		http.ServeContent(w, r, "index.html", st.ModTime(), httpfile)
 	})
