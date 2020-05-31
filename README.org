@@ -86,7 +86,7 @@
 
       #+begin_src shell
       cd web/paperless-frontend
-      npm run dev
+      npm run serve
       #+end_src
 
    3. This will start the frontend to port 8080 that connects to the backend
